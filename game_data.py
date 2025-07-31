@@ -183,7 +183,7 @@ locations = {
         ),
         "exits": {"bus station": "bus_stop", "town hall": "town_hall",
                   "tech store": "tech_store", "military base": "military_base",
-                  "general store": "general_store", "pawn shop": "pawn_shop"},
+                  "general store": "general_store", "pawn shop": "pawn_shop", "school": "school_entrance"},
         "interactions": {
             "talk people": "Most people are just going about their day. They look happy, oblivious. Trying to warn them might just make you look crazy.",
             "warn openly": "You open your mouth, but the words catch in your throat. Would anyone believe you? You'd just be a panicked voice in the wind.",
@@ -258,10 +258,10 @@ locations = {
         "description": (
             "You're on the main road leading out of town. The familiar houses slowly give way to dense forest and rolling hills."
         ),
-        "exits": {"town": "town_square", "neighbors bunker": "neighbors_bunker"}, # Changed front_door to town for consistency, added bunker
+        "exits": {"town": "town_square", "neighbors bunker": "neighbors_bunker", "bus stop": "bus_stop"}, # Changed front_door to town for consistency, added bunker
         "interactions": {
             "look around": "The road is quiet. You see no signs of other travelers. The sheer distance to safety becomes clear.",
-            "search for car": "You scan the side of the road, but there are no abandoned vehicles. Mr. Henderson's truck comes to mind."
+            "search for car": "You spend hours methodically searching the outskirts for any usable vehicles."
         }
     },
     "neighbors_bunker": {

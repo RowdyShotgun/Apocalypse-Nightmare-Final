@@ -218,7 +218,9 @@ def create_box(text, width=None, color=COLORS['box']):
 
 def create_countdown_box(time_left, phase):
     """Creates a special countdown box with time and phase, handling color codes properly."""
-    time_text = f"{time_left}h remaining"
+    # Round time to 1 decimal place to avoid long floating point numbers
+    rounded_time = round(time_left, 1)
+    time_text = f"{rounded_time}h remaining"
     phase_text = f"Phase: {phase.title()}"
     visible_time = strip_ansi(time_text)
     visible_phase = strip_ansi(phase_text)

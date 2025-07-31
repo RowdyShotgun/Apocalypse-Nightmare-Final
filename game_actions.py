@@ -50,24 +50,32 @@ def advance_time(hours=1, silent=False):
 
     # Add specific time-triggered narrative events
     if game_state["time_remaining"] <= 10 and not game_state["news_warning_issued"]:
-        print_slow(
-            "\nA local radio station interrupts its regular programming with a brief, garbled message about 'unusual atmospheric disturbances'. "
-            "It's subtle, but enough to send a chill down your spine.",
-            mode='slow'
-        )
-        game_state["news_warning_issued"] = True
-        if "radio_warning" not in game_state["inventory"]:
-            game_state["inventory"].append("radio_warning")
-            print_slow("You gained a **Radio Warning** as evidence!", mode='slow')
+        try:
+            print_slow(
+                "\nA local radio station interrupts its regular programming with a brief, garbled message about 'unusual atmospheric disturbances'. "
+                "It's subtle, but enough to send a chill down your spine.",
+                mode='slow'
+            )
+            game_state["news_warning_issued"] = True
+            if "radio_warning" not in game_state["inventory"]:
+                game_state["inventory"].append("radio_warning")
+                print_slow("You gained a **Radio Warning** as evidence!", mode='slow')
+        except Exception as e:
+            # Silently handle any errors in time-triggered events
+            pass
 
     if game_state["time_remaining"] <= 5 and not game_state["military_activity_noticed"]:
-        print_slow(
-            "\nOutside, you notice increased military vehicle traffic. "
-            "Humvees and supply trucks rumble through the streets. "
-            "Something is definitely happening.",
-            mode='slow'
-        )
-        game_state["military_activity_noticed"] = True
+        try:
+            print_slow(
+                "\nOutside, you notice increased military vehicle traffic. "
+                "Humvees and supply trucks rumble through the streets. "
+                "Something is definitely happening.",
+                mode='slow'
+            )
+            game_state["military_activity_noticed"] = True
+        except Exception as e:
+            # Silently handle any errors in time-triggered events
+            pass
 
 def build_jake_trust_opportunity():
     """Creates an opportunity to build trust with Jake through random events or specific actions."""
@@ -241,12 +249,34 @@ def handle_talk_ben_action(choice_num):
                 game_state["trust_ben"] -= 1  # Reduced penalty from -2
         elif choice_num == 2: # Ask him for help with something practical (e.g., getting supplies).
             print_slow(f"{game_state['protagonist_name']} asks Ben: 'I need to get out of here, or get some serious supplies. You know this town better than anyone. Any ideas?'", mode='slow')
-            print_slow(
-                "Ben taps his chin. 'Hmm. A truck with no gas... that's a problem.' "
-                "He pauses. 'I might know where some spare fuel cans are. "
-                "And old Mr. Henderson's truck always has the keys in it.'",
-                mode='slow'
-            )
+            
+            if game_state["has_car_keys"]:
+                # Player has already discovered the truck
+                print_slow(
+                    "Ben taps his chin. 'Hmm. A truck with no gas... that's a problem.' "
+                    "He pauses. 'I might know where some spare fuel cans are. "
+                    "And old Mr. Henderson's truck always has the keys in it.'",
+                    mode='slow'
+                )
+            else:
+                # Player hasn't discovered the truck yet
+                print_slow(
+                    "Ben taps his chin. 'Hmm. You'd need fuel for any vehicle you find.' "
+                    "He pauses. 'I might know where some spare fuel cans are. "
+                    "And old Mr. Henderson's truck always has the keys in it.'",
+                    mode='slow'
+                )
+            
+            # Ben offers gas from his generator
+            print_slow("Ben thinks for a moment. 'Actually, I have some gas for my generator. I can spare a can if you need it.'")
+            print_slow("He disappears for a moment and returns with a small gas can.")
+            if "gas_can" not in game_state["inventory"]:
+                game_state["inventory"].append("gas_can")
+                game_state["car_gas"] += 30
+                print_slow("Ben hands you a **Gas Can**. You gained 30% gas!")
+            else:
+                game_state["car_gas"] += 30
+                print_slow("Ben refills your gas can. You gained 30% gas!")
             
             # Add bunker information if Ben has high trust
             if game_state["trust_ben"] >= 6 and "bunker_rumor" not in game_state["inventory"]:
@@ -374,6 +404,7 @@ def handle_town_hall_interaction_action(choice_num):
         print_slow("You decide it's a dead end for now and leave quietly.")
         game_state["current_location"] = "town_square"
     advance_time(1)
+    input("Press Enter to continue...")
 
 
 def handle_computer_use_action(choice_num):
@@ -436,10 +467,23 @@ def handle_computer_use_action(choice_num):
 def handle_shout_warning():
     """Handles the 'warn openly' action."""
     print_slow(f"You take a deep breath and scream, 'A BOMB IS COMING! WE NEED TO EVACUATE!'")
-    if game_state["authority_of_town"] >= 3:
+    
+    # Check if Maya believes and can help
+    maya_bonus = 0
+    if game_state["trust_maya"] >= 5 and game_state.get("talked_to_maya_about_vision", False):
+        maya_bonus = 2
+        print_slow("Maya steps forward beside you, her voice trembling but determined. 'He's telling the truth! I believe him!'")
+        print_slow("Her genuine fear and conviction seem to affect some of the crowd. People look more concerned now.")
+    
+    # Calculate effective authority (base + Maya's help)
+    effective_authority = game_state["authority_of_town"] + maya_bonus
+    
+    if effective_authority >= 3:
         print_slow("A few people stop, looking startled. Some begin murmuring, a seed of doubt planted. The crowd begins to swell slightly.")
         game_state["mob_of_civilians"] = True
         game_state["authority_of_town"] += 1
+        if maya_bonus > 0:
+            print_slow("Maya's support made all the difference. People are starting to take you seriously.")
     else:
         print_slow("People stop, stare, then quickly avert their gaze, murmuring. Some point and laugh.")
         print_slow("You're dismissed as a lunatic. Your efforts feel futile, and you feel a wave of embarrassment.")
@@ -1275,4 +1319,21 @@ def handle_local_bus_travel():
     print_slow("You get off at the outskirts stop, near the main road leading out of town.")
     game_state["current_location"] = "outskirts_road"
     advance_time(0.5)
+    input("Press Enter to continue...")
+
+def handle_search_for_car_action():
+    """Handles the 'search for car' interaction in outskirts - high time cost way to find Mr. Henderson's truck."""
+    print_slow("You spend hours methodically searching the outskirts for any usable vehicles.")
+    print_slow("After what feels like forever, you finally spot something - an old, beat-up truck parked behind some overgrown bushes.")
+    print_slow("As you get closer, you recognize it as Mr. Henderson's truck. The keys are still in the ignition, as always.")
+    
+    if not game_state["has_car_keys"]:
+        game_state["has_car_keys"] = True
+        game_state["inventory"].append("truck_keys")
+        print_slow("You got the **Truck Keys**! But the gas tank is almost empty.")
+    else:
+        print_slow("You're back at Mr. Henderson's truck. The gas tank is still empty.")
+    
+    # High time cost for finding it without tips
+    advance_time(3)  # 3 hours of searching
     input("Press Enter to continue...")
