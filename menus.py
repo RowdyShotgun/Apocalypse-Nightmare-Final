@@ -8,14 +8,14 @@ Handles all user interaction, menu navigation, and the main game loop for the te
 """
 import sys
 from game_data import game_state, INVENTORY_ITEMS, TRUST_THRESHOLDS, TIME_PHASES
-from utils import print_slow
+from utils import print_slow, print_colored
 from game_actions import (
     advance_time, display_location,
     handle_vision_event,
     handle_talk_parents_action, handle_talk_alex_action, handle_talk_maya_action,
     handle_talk_ben_action, handle_talk_jake_action,
     handle_town_hall_interaction_action, handle_computer_use_action, handle_shout_warning,
-    handle_seek_transport_action, handle_gather_supplies_action,
+    handle_gather_supplies_action,
     handle_involve_friends_escape_action, handle_general_store_interaction_action,
     handle_steal_general_store_action,
     handle_burger_hut_work_action, handle_go_to_class_action,
@@ -34,7 +34,6 @@ from colorama import Fore
 def display_menu(options):
     """Displays a numbered list of options and returns the chosen action function
     or a special value/tuple if sub-choices need to be passed."""
-    from utils import print_colored
     
     while True: # Loop until valid input
         for idx, (desc, _) in enumerate(options, 1):
@@ -356,10 +355,7 @@ def handle_outskirts_road_menu():
             return  # Exit menu to trigger game end in main_menu_loop
     
     options = [
-        ("Search for car (Mr. Henderson's truck)",
-         lambda: handle_seek_transport_menu()),
-        # Sub-menu for transport search
-        ("Go to town square", lambda: set_location("town_square")),
+        ("Go to bus stop", lambda: set_location("bus_stop")),
     ]
     
     # Only show bunker option if player has discovered it
@@ -371,6 +367,10 @@ def handle_outskirts_road_menu():
         ("Show status", display_status),
         ("Quit", exit_game),
     ])
+    
+    # Add truck travel options if available
+    options = add_truck_travel_options(options, "outskirts_road")
+    
     action = display_menu(options)
     action()
 
@@ -612,18 +612,7 @@ def handle_steal_general_store_sub_menu():
             break
 
 
-def handle_seek_transport_menu():
-    print_slow("You need a way out of town.")
-    while True:
-        options = [
-            ("Look for Mr. Henderson's truck (near Outskirts Road)", lambda: handle_seek_transport_action(1)),
-            ("Go to the Bus Stop", lambda: handle_seek_transport_action(2)),
-            ("Go back", lambda: "__BACK__"),
-        ]
-        action = display_menu(options)
-        result = action()
-        if result == "__BACK__":
-            break
+
 
 
 def handle_gather_supplies_menu():
@@ -749,29 +738,26 @@ def add_truck_travel_options(options, current_location):
                 ("🚗 Drive to School", lambda: handle_truck_travel_action("school_entrance")),
                 ("🚗 Drive to General Store", lambda: handle_truck_travel_action("general_store")),
                 ("🚗 Drive to Tech Store", lambda: handle_truck_travel_action("tech_store")),
+                ("🚗 Drive to Bus Stop", lambda: handle_truck_travel_action("bus_stop")),
+                ("🚗 Drive to Outskirts Road", lambda: handle_truck_travel_action("outskirts_road")),
             ]
-            # Only show bus stop if player has cash for ticket
-            if game_state["cash"] >= 1:
-                truck_options.append(("🚗 Drive to Bus Stop", lambda: handle_truck_travel_action("bus_stop")))
-            # Only show outskirts if player needs to escape
-            if game_state["time_remaining"] <= 6:
-                truck_options.append(("🚗 Drive to Outskirts Road", lambda: handle_truck_travel_action("outskirts_road")))
                 
         elif current_location == "school_entrance":
             # From school, prioritize getting back to town or supplies
             truck_options = [
                 ("🚗 Drive to Town Square", lambda: handle_truck_travel_action("town_square")),
                 ("🚗 Drive to General Store", lambda: handle_truck_travel_action("general_store")),
+                ("🚗 Drive to Bus Stop", lambda: handle_truck_travel_action("bus_stop")),
+                ("🚗 Drive to Outskirts Road", lambda: handle_truck_travel_action("outskirts_road")),
             ]
-            # Only show bus stop if player has cash
-            if game_state["cash"] >= 1:
-                truck_options.append(("🚗 Drive to Bus Stop", lambda: handle_truck_travel_action("bus_stop")))
                 
         elif current_location == "general_store":
             # From store, prioritize getting back to town or school
             truck_options = [
                 ("🚗 Drive to Town Square", lambda: handle_truck_travel_action("town_square")),
                 ("🚗 Drive to School", lambda: handle_truck_travel_action("school_entrance")),
+                ("🚗 Drive to Bus Stop", lambda: handle_truck_travel_action("bus_stop")),
+                ("🚗 Drive to Outskirts Road", lambda: handle_truck_travel_action("outskirts_road")),
             ]
             # Only show tech store if player needs tech parts
             if game_state["tech_parts"] < 2:
@@ -782,11 +768,20 @@ def add_truck_travel_options(options, current_location):
             truck_options = [
                 ("🚗 Drive to Town Square", lambda: handle_truck_travel_action("town_square")),
                 ("🚗 Drive to General Store", lambda: handle_truck_travel_action("general_store")),
+                ("🚗 Drive to Bus Stop", lambda: handle_truck_travel_action("bus_stop")),
+                ("🚗 Drive to Outskirts Road", lambda: handle_truck_travel_action("outskirts_road")),
             ]
             # Only show military base if player has high knowledge and tech parts
             if game_state["knowledge"] >= 5 and game_state["tech_parts"] >= 2:
                 truck_options.append(("🚗 Drive to Military Base", lambda: handle_truck_travel_action("military_base")))
                 
+        elif current_location == "outskirts_road":
+            # From outskirts, prioritize getting back to town or to bus stop
+            truck_options = [
+                ("🚗 Drive to Town Square", lambda: handle_truck_travel_action("town_square")),
+                ("🚗 Drive to Bus Stop", lambda: handle_truck_travel_action("bus_stop")),
+                ("🚗 Drive to General Store", lambda: handle_truck_travel_action("general_store")),
+            ]
         else:
             # Default fallback - just get back to town
             truck_options = [

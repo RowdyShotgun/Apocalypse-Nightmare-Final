@@ -12,70 +12,74 @@ def advance_time(hours=1, silent=False):
     """Decreases time remaining and updates day phase.
     Provides narrative cues for phase changes.
     'silent=True' prevents narrative messages for minor time deductions."""
-    game_state["time_remaining"] -= hours
+    try:
+        game_state["time_remaining"] -= hours
 
-    # Ensure time doesn't go below zero
-    if game_state["time_remaining"] < 0:
-        game_state["time_remaining"] = 0
+        # Ensure time doesn't go below zero
+        if game_state["time_remaining"] < 0:
+            game_state["time_remaining"] = 0
 
-    if game_state["time_remaining"] == 0:
-        game_state["ending_achieved"] = "Time's Up"
-        if not silent:
-            print_slow("\n--- The clock strikes zero. Your time has run out. ---", mode='slow')
-        return
+        if game_state["time_remaining"] == 0:
+            game_state["ending_achieved"] = "Time's Up"
+            if not silent:
+                print_slow("\n--- The clock strikes zero. Your time has run out. ---", mode='slow')
+            return
 
-    old_day_phase = game_state["current_day_phase"]
-    new_day_phase = old_day_phase
+        old_day_phase = game_state["current_day_phase"]
+        new_day_phase = old_day_phase
 
-    # Update day phase based on remaining time
-    if game_state["time_remaining"] <= 12 and old_day_phase == "morning":
-        new_day_phase = "afternoon"
-    elif game_state["time_remaining"] <= 6 and old_day_phase == "afternoon":
-        new_day_phase = "evening"
-    elif game_state["time_remaining"] <= 1 and old_day_phase == "evening":
-        new_day_phase = "night"
+        # Update day phase based on remaining time
+        if game_state["time_remaining"] <= 12 and old_day_phase == "morning":
+            new_day_phase = "afternoon"
+        elif game_state["time_remaining"] <= 6 and old_day_phase == "afternoon":
+            new_day_phase = "evening"
+        elif game_state["time_remaining"] <= 1 and old_day_phase == "evening":
+            new_day_phase = "night"
 
-    if new_day_phase != old_day_phase and not silent:
-        print_slow(f"\n--- The day progresses. It is now {new_day_phase.title()}. ---", mode='slow')
-        print_slow(f"You have approximately {game_state['time_remaining']} hours left.", mode='slow')
+        if new_day_phase != old_day_phase and not silent:
+            print_slow(f"\n--- The day progresses. It is now {new_day_phase.title()}. ---", mode='slow')
+            print_slow(f"You have approximately {game_state['time_remaining']} hours left.", mode='slow')
 
-    game_state["current_day_phase"] = new_day_phase
+        game_state["current_day_phase"] = new_day_phase
 
-    # Add time feedback for non-silent time advances
-    if not silent and hours > 0.1:  # Only show for significant time advances
-        if hours >= 1:
-            print_slow(f"⏰ {hours} hour(s) have passed.", mode='fast')
-        else:
-            print_slow(f"⏰ {hours * 60:.0f} minutes have passed.", mode='fast')
+        # Add time feedback for non-silent time advances
+        if not silent and hours > 0.1:  # Only show for significant time advances
+            if hours >= 1:
+                print_slow(f"⏰ {hours} hour(s) have passed.", mode='fast')
+            else:
+                print_slow(f"⏰ {hours * 60:.0f} minutes have passed.", mode='fast')
 
-    # Add specific time-triggered narrative events
-    if game_state["time_remaining"] <= 10 and not game_state["news_warning_issued"]:
-        try:
-            print_slow(
-                "\nA local radio station interrupts its regular programming with a brief, garbled message about 'unusual atmospheric disturbances'. "
-                "It's subtle, but enough to send a chill down your spine.",
-                mode='slow'
-            )
-            game_state["news_warning_issued"] = True
-            if "radio_warning" not in game_state["inventory"]:
-                game_state["inventory"].append("radio_warning")
-                print_slow("You gained a **Radio Warning** as evidence!", mode='slow')
-        except Exception as e:
-            # Silently handle any errors in time-triggered events
-            pass
+        # Add specific time-triggered narrative events
+        if game_state["time_remaining"] <= 10 and not game_state["news_warning_issued"]:
+            try:
+                print_slow(
+                    "\nA local radio station interrupts its regular programming with a brief, garbled message about 'unusual atmospheric disturbances'. "
+                    "It's subtle, but enough to send a chill down your spine.",
+                    mode='slow'
+                )
+                game_state["news_warning_issued"] = True
+                if "radio_warning" not in game_state["inventory"]:
+                    game_state["inventory"].append("radio_warning")
+                    print_slow("You gained a **Radio Warning** as evidence!", mode='slow')
+            except Exception as e:
+                # Silently handle any errors in time-triggered events
+                pass
 
-    if game_state["time_remaining"] <= 5 and not game_state["military_activity_noticed"]:
-        try:
-            print_slow(
-                "\nOutside, you notice increased military vehicle traffic. "
-                "Humvees and supply trucks rumble through the streets. "
-                "Something is definitely happening.",
-                mode='slow'
-            )
-            game_state["military_activity_noticed"] = True
-        except Exception as e:
-            # Silently handle any errors in time-triggered events
-            pass
+        if game_state["time_remaining"] <= 5 and not game_state["military_activity_noticed"]:
+            try:
+                print_slow(
+                    "\nOutside, you notice increased military vehicle traffic. "
+                    "Humvees and supply trucks rumble through the streets. "
+                    "Something is definitely happening.",
+                    mode='slow'
+                )
+                game_state["military_activity_noticed"] = True
+            except Exception as e:
+                # Silently handle any errors in time-triggered events
+                pass
+    except Exception as e:
+        # If time advancement fails, just continue without crashing
+        pass
 
 def build_jake_trust_opportunity():
     """Creates an opportunity to build trust with Jake through random events or specific actions."""
@@ -105,20 +109,27 @@ def build_jake_trust_opportunity():
 def display_location():
     """Display current location information."""
     from utils import create_box, create_countdown_box, colorize_location, print_slow_colored
+    from game_data import locations
     
+    # Set default location if none exists
+    if not game_state.get("current_location"):
+        game_state["current_location"] = "home"
+    
+    # Display location description
     if game_state["current_location"] == "home":
         print_slow("You look around your familiar home, the morning sun streaming in.", mode='slow')
     else:
         location_name = colorize_location(game_state["current_location"].replace("_", " ").title())
         print_slow_colored(f"You are at: {location_name}", "location", mode='slow')
+        
+        # Display the actual location description from game_data
+        if game_state["current_location"] in locations:
+            location_desc = locations[game_state["current_location"]]["description"]
+            print_slow(location_desc, mode='slow')
     
     # Display time and countdown
     time_box = create_countdown_box(game_state["time_remaining"], game_state["current_day_phase"])
     print_slow(time_box, mode='slow')
-    
-    # Set default location if none exists
-    if not game_state.get("current_location"):
-        game_state["current_location"] = "home"
 
 # --- Initial Event ---
 def handle_vision_event():
@@ -404,7 +415,11 @@ def handle_town_hall_interaction_action(choice_num):
         print_slow("You decide it's a dead end for now and leave quietly.")
         game_state["current_location"] = "town_square"
     advance_time(1)
-    input("Press Enter to continue...")
+    try:
+        input("Press Enter to continue...")
+    except (EOFError, KeyboardInterrupt):
+        # Handle input errors gracefully
+        pass
 
 
 def handle_computer_use_action(choice_num):
@@ -493,26 +508,7 @@ def handle_shout_warning():
     advance_time(0.5)
 
 
-def handle_seek_transport_action(choice_num):
-    """Handles specific choices for seeking transport."""
-    if choice_num == 1: # Look for Mr. Henderson's truck (near Outskirts Road).
-        game_state["current_location"] = "outskirts_road"
-        print_slow(f"You head towards the outskirts, remembering Mr. Henderson's beat-up truck.")
-        advance_time(0.5)
-        if not game_state["has_car_keys"]:
-            print_slow("You spot Mr. Henderson's old truck! The keys are in the ignition, as always. But the gas tank is almost empty.")
-            game_state["has_car_keys"] = True
-            game_state["inventory"].append("truck_keys")
-            print_slow("You got the **Truck Keys**! Now you just need gas.")
-        else:
-            print_slow("You're back at Mr. Henderson's truck. The gas tank is still empty. You still need gas for it.")
-    elif choice_num == 2: # Go to the Bus Stop.
-        game_state["current_location"] = "bus_stop"
-        print_slow(f"You make your way to the bus stop, hoping for a quick departure.")
-        advance_time(0.5)
-    elif choice_num == 3: # Go back.
-        print_slow("You decide to rethink your transport options.")
-        advance_time(0.1, silent=True)
+
 
 
 def handle_gather_supplies_action(choice_num):
@@ -797,15 +793,35 @@ def handle_military_base_approach_action(choice_num):
 
     if choice_num == 1: # Attempt to Sneak In.
         print_slow(
-            "You try to find a weak point in the perimeter fence, looking for cameras or patrols."
+            "You approach the military base perimeter, scanning for weak points in the fence."
         )
+        print_slow(
+            "Searchlights sweep the area. You can see guards patrolling the perimeter."
+        )
+        
         if game_state["knowledge"] >= 3 and game_state["tech_parts"] >= 1:
             print_slow(
-                "Using your knowledge of security systems and a few **Tech Parts**, you disable a camera and slip through a blind spot."
+                "Your knowledge of security systems helps you identify blind spots in the camera coverage."
+            )
+            print_slow(
+                "Using your **Tech Parts**, you carefully disable a camera and create a small diversion."
+            )
+            print_slow(
+                "Heart pounding, you wait for the right moment..."
+            )
+            input("Press Enter to continue...")
+            
+            print_slow(
+                "A guard turns away to investigate the diversion. This is your chance!"
+            )
+            print_slow(
+                "You slip through the fence and duck behind some equipment. The base sprawls before you."
+            )
+            print_slow(
+                "You've successfully infiltrated the **Military Base**!"
             )
             game_state["military_base_accessed"] = True
             game_state["current_location"] = "military_base"
-            print_slow("You are inside the **Military Base**!")
         else:
             print_slow(
                 "You can't find a way in without being spotted. A guard dog barks, and you hear shouts."
@@ -817,14 +833,22 @@ def handle_military_base_approach_action(choice_num):
     elif choice_num == 2: # Try to Use Authority to Get In (if you have it).
         if game_state["authority_of_town"] >= 5:
             print_slow(
-                "You boldly approach the main gate, flashing your credentials or leveraging your influence."
+                "You boldly approach the main gate, your confidence bolstered by your authority in town."
             )
             print_slow(
-                "The guard hesitates, then waves you through. Your authority is recognized."
+                "The guard at the gate looks you over carefully, then checks a clipboard."
+            )
+            print_slow(
+                "After a tense moment, he nods and waves you through. 'Proceed, sir.'"
+            )
+            print_slow(
+                "You walk through the gate, the military base opening up before you."
+            )
+            print_slow(
+                "You've gained access to the **Military Base** through official channels!"
             )
             game_state["military_base_accessed"] = True
             game_state["current_location"] = "military_base"
-            print_slow("You are inside the **Military Base**!")
         else:
             print_slow(
                 "You try to assert authority, but the guard just stares blankly. 'Beat it, kid. Civilians aren't allowed here.'"
@@ -1006,7 +1030,7 @@ def display_mushroom_cloud():
           | ;  :|
  _____.,-#######~,._____
 """
-    print_slow(mushroom_cloud)
+    print_slow(mushroom_cloud, wrap=False)
 
 def get_contextual_hint():
     """Provides contextual hints based on current game state."""

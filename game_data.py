@@ -229,7 +229,9 @@ locations = {
     },
     "bus_stop": {
         "description": (
-            "A small, weathered shelter with a faded bus schedule. Local buses run around town, while out-of-state buses offer escape routes."
+            "A small, weathered shelter with a faded bus schedule. Local buses run around town, "
+            "including routes to the outskirts where Mr. Henderson's truck is usually parked. "
+            "Out-of-state buses offer escape routes."
         ),
         "exits": {"town square": "town_square"},
         "interactions": {
@@ -258,7 +260,7 @@ locations = {
         "description": (
             "You're on the main road leading out of town. The familiar houses slowly give way to dense forest and rolling hills."
         ),
-        "exits": {"town": "town_square", "neighbors bunker": "neighbors_bunker", "bus stop": "bus_stop"}, # Changed front_door to town for consistency, added bunker
+        "exits": {"bus stop": "bus_stop", "neighbors bunker": "neighbors_bunker"}, # Only bus stop exit - maintains bus stop as gateway
         "interactions": {
             "look around": "The road is quiet. You see no signs of other travelers. The sheer distance to safety becomes clear.",
             "search for car": "You spend hours methodically searching the outskirts for any usable vehicles."
