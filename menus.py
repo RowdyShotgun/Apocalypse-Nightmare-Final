@@ -683,20 +683,20 @@ def handle_military_base_approach_menu():
                 game_state["military_base_accessed"] = True
                 game_state["current_location"] = "military_base"
                 print_slow("You have successfully snuck into the base!")
-                break
+                return
             else:
                 print_slow("You try to sneak in, but lack the skills or equipment. A guard spots you and you are forced to retreat!")
-                break
+                return
         elif action == "bluff":
             if game_state["authority_of_town"] >= 5:
                 print_slow("You confidently approach the gate, flashing your credentials and leveraging your authority. The guard hesitates, then lets you in.")
                 game_state["military_base_accessed"] = True
                 game_state["current_location"] = "military_base"
                 print_slow("You have successfully bluffed your way into the base!")
-                break
+                return
             else:
                 print_slow("You try to bluff your way in, but the guard is unconvinced. You are turned away.")
-                break
+                return
         elif action == "bribe":
             if game_state["cash"] >= 2:
                 print_slow("You discreetly offer the guard some cash. He glances around, pockets the money, and lets you in.")
@@ -704,14 +704,14 @@ def handle_military_base_approach_menu():
                 game_state["military_base_accessed"] = True
                 game_state["current_location"] = "military_base"
                 print_slow("You have successfully bribed your way into the base!")
-                break
+                return
             else:
                 print_slow("You don't have enough cash to bribe the guard. He scoffs and tells you to leave.")
-                break
+                return
         elif action == "retreat":
             print_slow("You decide to retreat and return to the Town Square.")
             game_state["current_location"] = "town_square"
-            break
+            return
 
 
 def handle_military_base_actions_internal_menu():
