@@ -3,7 +3,7 @@
 # Import necessary data and utilities
 import time
 import random
-from game_data import game_state, locations, INVENTORY_ITEMS, TRUST_THRESHOLDS, TIME_PHASES
+from game_data import game_state, locations
 from utils import print_slow, clear_screen
 from colorama import Fore, Style
 

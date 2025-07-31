@@ -6,8 +6,6 @@ This script will test menu navigation and ensure no broken paths exist.
 
 import sys
 import os
-from io import StringIO
-from contextlib import redirect_stdout
 
 # Add the current directory to the path so we can import game modules
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
