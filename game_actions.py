@@ -230,6 +230,7 @@ def handle_talk_maya_action(choice_num):
     else:
         if game_state["trust_maya"] >= 5:  # Back to requiring effort
             print_slow("Maya is anxious but supportive. 'I'm here for you, no matter what happens. We'll face this together.'", mode='slow')
+            print_slow("She looks determined. 'If you need to warn people about this, I'll stand with you. They might listen if we both speak up.'", mode='slow')
         elif game_state["trust_maya"] >= 3:
             print_slow("Maya tries to offer comfort, but her voice is strained. She's clearly thinks you're overwhelmed.", mode='slow')
         else:
@@ -1053,6 +1054,8 @@ def get_contextual_hint():
         hints.append("🔍 Alex might have useful information if you gain his trust.")
     if game_state["trust_maya"] < 5:  # Back to requiring effort
         hints.append("💝 Maya could provide moral support and encouragement.")
+    elif game_state["trust_maya"] >= 5 and game_state.get("talked_to_maya_about_vision", False):
+        hints.append("💝 Maya believes your vision and could help convince others if you warn the town.")
     if game_state["trust_ben"] < 4:  # Back to requiring effort
         hints.append("🔧 Ben's practical knowledge could be valuable.")
     if game_state["trust_jake"] < 2:
