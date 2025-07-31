@@ -184,6 +184,7 @@ def handle_town_square_menu():
         ("Warn people openly", lambda: handle_shout_warning()),
         ("Work at Burger Hut", lambda: set_location("burger_hut")),
         ("Go home", lambda: set_location("home")),
+        ("Go to school entrance", lambda: set_location("school_entrance")),
         ("Go to bus stop", lambda: set_location("bus_stop")),
         ("Go to town hall", lambda: set_location("town_hall")),
         ("Go to tech store", lambda: set_location("tech_store")),
