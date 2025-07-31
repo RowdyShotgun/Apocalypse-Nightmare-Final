@@ -231,8 +231,8 @@ def handle_newspaper_club_menu():
                 ("Talk to Maya", lambda: handle_talk_maya_menu()),
                 ("Talk to Ben", lambda: handle_talk_ben_menu()),
             ]
-            # Show Jake if you've helped him (trust > 2) or if he owes a favor
-            if game_state["trust_jake"] > 2 or game_state.get("jake_owed_favor", False):
+            # Show Jake if you have any trust with him or if he owes a favor
+            if game_state["trust_jake"] > 0 or game_state.get("jake_owed_favor", False):
                 options.append(("Talk to Jake", lambda: handle_talk_jake_menu()))
             # Use a lambda that returns a sentinel value for Go back
             options.append(("Go back", lambda: "__BACK__"))
