@@ -95,36 +95,32 @@ def build_jake_trust_opportunity():
 
 # This display_location function should be called by menus.py to show current location info
 def display_location():
-    """Displays the current location's description and available exits."""
+    """Display current location information."""
     from utils import create_box, create_countdown_box, colorize_location, print_slow_colored
     
-    clear_screen()
+    if game_state["current_location"] == "home":
+        print_slow("You look around your familiar home, the morning sun streaming in.", mode='slow')
+    else:
+        location_name = colorize_location(game_state["current_location"].replace("_", " ").title())
+        print_slow_colored(f"You are at: {location_name}", "location", mode='slow')
     
-    # Create location header box
-    location_name = game_state['current_location'].replace('_', ' ').title()
-    location_box = create_box(colorize_location(location_name))
-    print(location_box)
+    # Display time and countdown
+    time_box = create_countdown_box(game_state["time_remaining"], game_state["current_day_phase"])
+    print_slow(time_box, mode='slow')
     
-    # Create countdown box
-    countdown_box = create_countdown_box(game_state['time_remaining'], game_state['current_day_phase'])
-    print(countdown_box)
-    
-    # Display location description
-    print_slow_colored(locations[game_state["current_location"]]["description"], "info")
-    print()  # Extra spacing
+    # Set default location if none exists
+    if not game_state.get("current_location"):
+        game_state["current_location"] = "home"
 
 # --- Initial Event ---
 def handle_vision_event():
-    """Initial event where the vision occurs and sets the starting location."""
-    print_slow("A blinding flash, a deafening roar... and then, nothing but dust.", mode='slow')
-    print_slow("It was clear. Your city was going to be destroyed.", mode='slow')
-    print_slow("You rub your eyes, heart pounding. Was it real? It felt so real.", mode='slow')
-    print_slow("You look around your familiar bedroom, the morning sun streaming in.", mode='slow')
-    print_slow("The peace feels like a lie.", mode='slow')
-    print_slow("What do you do?", mode='slow')
-    input("Press Enter to continue...")
-    time.sleep(1)
-    game_state["current_location"] = "bedroom"
+    """Handle the initial vision event that starts the game."""
+    print_slow("You wake up in a cold sweat, your heart pounding. The nightmare was so vivid...", mode='slow')
+    print_slow("A nuclear missile. Your city. The explosion. The end.", mode='slow')
+    print_slow("But it felt so real...", mode='slow')
+    
+    # Set player to home location
+    game_state["current_location"] = "home"
 
 # --- Specific Action Functions (receive choices from menus) ---
 
@@ -986,7 +982,7 @@ def get_contextual_hint():
         hints.append("👊 Jake might help if you show him respect.")
     
     # Location-based hints
-    if game_state["current_location"] == "bedroom" and game_state["time_remaining"] > 8:
+    if game_state["current_location"] == "home" and game_state["time_remaining"] > 8:
         hints.append("🏠 You're safe at home, but time is ticking.")
     if game_state["current_location"] == "town_square":
         hints.append("🏛️ The town square connects to many important locations.")

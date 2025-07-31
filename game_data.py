@@ -36,7 +36,7 @@ TIME_PHASES = {
 
 # --- Game State Variables ---
 game_state = {
-    "current_location": "bedroom",
+    "current_location": "home",
     "inventory": [],
     "knowledge": 0, # Player's accumulated knowledge
     "tech_parts": 0, # Player's accumulated tech parts
@@ -111,7 +111,7 @@ def reset_game_state():
     
     # Store the original template
     original_state = {
-        "current_location": "bedroom",
+        "current_location": "home",
         "inventory": [],
         "knowledge": 0,
         "tech_parts": 0,
@@ -158,25 +158,18 @@ characters = {
 
 # --- Locations and Scenes ---
 locations = {
-    "bedroom": {
+    "home": {
         "description": (
-            "Your small, cluttered bedroom in your West Virginia home. The morning light filters through the window. "
+            "Your West Virginia home. The morning light filters through the window in your small, cluttered bedroom. "
+            "In the cozy, slightly worn living room, your parents are engaged in their morning routine. "
             "The terrifying vision still burns in your mind."
         ),
-        "exits": {"living room": "living_room"},
+        "exits": {"town square": "town_square", "school": "school_entrance"},
         "interactions": {
             "look window": "You see the familiar, peaceful street outside. It's hard to believe what you just saw. Normalcy feels like a fragile illusion.",
             "examine bed": "Your unmade bed. You just woke up from the nightmare that felt too real. Your heart still pounds.",
             "think": "The vision... a nuclear missile. Your city. Gone. You shudder. What do you do?",
-            "use computer": "You sit at your desk, the screen glowing. What do you search for?"
-        }
-    },
-    "living_room": {
-        "description": (
-            "The cozy, slightly worn living room. Your parents are here, engaged in their morning routine."
-        ),
-        "exits": {"bedroom": "bedroom"},
-        "interactions": {
+            "use computer": "You sit at your desk, the screen glowing. What do you search for?",
             "talk parents": "Your parents are busy with breakfast. They'd never believe you, not without solid proof.",
             "look tv": "The local news reports on mundane town events. Nothing out of the ordinary, which only makes your vision feel more unsettling.",
             "examine photo": "A framed family photo. Everyone looks so happy, so oblivious to what you've seen. A pang of dread hits you."

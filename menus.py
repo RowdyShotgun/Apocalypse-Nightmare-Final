@@ -163,26 +163,12 @@ def display_status():
 # --- Location-Specific Menu Handlers ---
 # Each handler displays its menu and dispatches to game_actions.py functions.
 
-def handle_bedroom_menu():
+def handle_home_menu():
     options = [
         ("Go to town", lambda: set_location("town_square")),
         ("Go to school", lambda: set_location("school_entrance")),
         ("Use computer", handle_computer_use_menu),
         ("Talk to parents", handle_talk_parents_menu),
-        ("Go to living room", lambda: set_location("living_room")),
-        ("Show inventory", display_inventory),
-        ("Show status", display_status),
-        ("Quit", exit_game),
-    ]
-    action = display_menu(options)
-    action()
-
-def handle_living_room_menu():
-    options = [
-        ("Talk to parents", handle_talk_parents_menu),
-        ("Go to bedroom", lambda: set_location("bedroom")),
-        ("Go to town", lambda: set_location("town_square")),
-        ("Go to school", lambda: set_location("school_entrance")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
         ("Quit", exit_game),
@@ -198,7 +184,7 @@ def handle_town_square_menu():
     options = [
         ("Warn people openly", lambda: handle_shout_warning()),
         ("Work at Burger Hut", lambda: set_location("burger_hut")),
-        ("Go home (Living Room)", lambda: set_location("living_room")),
+        ("Go home", lambda: set_location("home")),
         ("Go to bus stop", lambda: set_location("bus_stop")),
         ("Go to town hall", lambda: set_location("town_hall")),
         ("Go to tech store", lambda: set_location("tech_store")),
@@ -225,7 +211,7 @@ def handle_school_entrance_menu():
         ("Go to class", lambda: handle_go_to_class_action()),
         ("Steal from school", lambda: handle_steal_school_action()),
         ("Go to newspaper club", lambda: set_location("newspaper_club")),
-        ("Go home (Living Room)", lambda: set_location("living_room")),
+        ("Go home", lambda: set_location("home")),
         ("Go to town square", lambda: set_location("town_square")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
@@ -434,24 +420,21 @@ def handle_pawn_shop_menu():
 # --- Sub-Menus (interactions that have their own choices) ---
 
 def handle_computer_use_menu():
-    print_slow("You sit down at your computer. What do you want to search for?")
-    options = [
-        ("Search for 'nuclear threat' or 'impending doom'", lambda: handle_computer_use_action(1)),
-        ("Look for unusual local news reports", lambda: handle_computer_use_action(2)),
-        ("Check for survival guides or emergency bunkers", lambda: handle_computer_use_action(3)),
-        ("Stop using the computer", lambda: None), # Choosing this will just return from this menu
-    ]
-    action_to_perform = display_menu(options)
-    if action_to_perform:
-        # Check if the action is "Stop using computer"
-        if action_to_perform == options[3][1]: # Check if it's the lambda for stopping
-            handle_computer_use_action(4) # Call action to deduct time for stopping
-            return # Exit this sub-menu
-        action_to_perform() # Execute the chosen action
-    # If action was chosen AND it's not 'Stop using computer', re-display computer menu.
-    # This keeps player in computer context until they explicitly stop.
-    if game_state["current_location"] == "bedroom": # Only re-loop if still in bedroom (prevent infinite loop if loc changed)
-        handle_computer_use_menu()
+    # Only re-loop if still in home (prevent infinite loop if loc changed)
+    if game_state["current_location"] == "home": # Only re-loop if still in home (prevent infinite loop if loc changed)
+        while True:
+            options = [
+                ("Search for nuclear threats", lambda: handle_computer_use_action(1)),
+                ("Research missile defense", lambda: handle_computer_use_action(2)),
+                ("Look up survival tips", lambda: handle_computer_use_action(3)),
+                ("Go back", lambda: "__BACK__")
+            ]
+            action = display_menu(options)
+            result = action()
+            if result == "__BACK__":
+                break
+    else:
+        print_slow("You need to be at home to use the computer.")
 
 
 
@@ -813,8 +796,7 @@ def add_truck_travel_options(options, current_location):
 # --- Main Menu Dispatcher ---
 # This dictionary maps current_location to its corresponding menu handler function.
 menu_handlers = {
-    "bedroom": handle_bedroom_menu,
-    "living_room": handle_living_room_menu,
+    "home": handle_home_menu,
     "town_square": handle_town_square_menu,
     "school_entrance": handle_school_entrance_menu,
     "newspaper_club": handle_newspaper_club_menu,
@@ -885,7 +867,7 @@ def main_menu_loop():
             except Exception as e:
                 print_colored(f"Error in menu handler: {e}", "warning")
                 print_colored("Returning to main menu...", "info")
-                game_state["current_location"] = "bedroom"  # Safe fallback
+                game_state["current_location"] = "home"  # Safe fallback
         else:
             print_colored(f"Error: No menu handler for location: {game_state['current_location']}. Exiting game.", "warning")
             sys.exit(0)
