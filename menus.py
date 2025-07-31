@@ -26,7 +26,7 @@ from game_actions import (
     handle_time_up_ending, handle_jailed_ending, buy_tech_parts_action,
     handle_steal_school_action, handle_steal_tech_store_action, handle_jake_favor_action,
     build_jake_trust_opportunity, handle_truck_escape_ending, handle_truck_travel_action,
-    handle_pawn_shop_sell_action, handle_local_bus_travel
+    handle_pawn_shop_sell_action, handle_local_bus_travel, handle_search_for_car_action
 )
 from colorama import Fore
 
@@ -355,6 +355,7 @@ def handle_outskirts_road_menu():
             return  # Exit menu to trigger game end in main_menu_loop
     
     options = [
+        ("Search for car", lambda: handle_search_for_car_action()),
         ("Go to bus stop", lambda: set_location("bus_stop")),
     ]
     
