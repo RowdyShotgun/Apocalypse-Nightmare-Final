@@ -165,7 +165,7 @@ def display_status():
 def handle_home_menu():
     options = [
         ("Go to town", lambda: set_location("town_square")),
-        ("Go to school", lambda: set_location("school_entrance")),
+        ("Go to school entrance", lambda: set_location("school_entrance")),
         ("Use computer", handle_computer_use_menu),
         ("Talk to parents", handle_talk_parents_menu),
         ("Show inventory", display_inventory),
