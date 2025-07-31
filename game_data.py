@@ -100,7 +100,7 @@ def validate_game_state():
     
     # Check for valid inventory items
     for item in game_state.get("inventory", []):
-        if item not in INVENTORY_ITEMS.values() and not item.startswith("stolen_") and item not in ["bunker_rumor", "bunker_supplies_taken", "survival_notes_alex", "survival_checklist", "tip_henderson_truck", "burger_hut_paycheck", "radio_warning"]:
+        if item not in INVENTORY_ITEMS.values() and not item.startswith("stolen_") and item not in ["bunker_rumor", "bunker_supplies_taken", "survival_notes_alex", "survival_checklist", "tip_henderson_truck", "burger_hut_paycheck", "radio_warning", "kitchen_supplies_taken", "school_supplies_taken", "truck_keys"]:
             errors.append(f"Unknown inventory item: {item}")
     
     return errors
@@ -163,7 +163,7 @@ locations = {
             "Your small, cluttered bedroom in your West Virginia home. The morning light filters through the window. "
             "The terrifying vision still burns in your mind."
         ),
-        "exits": {"living room": "living_room", "front door": "front_door"},
+        "exits": {"living room": "living_room"},
         "interactions": {
             "look window": "You see the familiar, peaceful street outside. It's hard to believe what you just saw. Normalcy feels like a fragile illusion.",
             "examine bed": "Your unmade bed. You just woke up from the nightmare that felt too real. Your heart still pounds.",
@@ -175,28 +175,20 @@ locations = {
         "description": (
             "The cozy, slightly worn living room. Your parents are here, engaged in their morning routine."
         ),
-        "exits": {"bedroom": "bedroom", "front door": "front_door"},
+        "exits": {"bedroom": "bedroom"},
         "interactions": {
             "talk parents": "Your parents are busy with breakfast. They'd never believe you, not without solid proof.",
             "look tv": "The local news reports on mundane town events. Nothing out of the ordinary, which only makes your vision feel more unsettling.",
             "examine photo": "A framed family photo. Everyone looks so happy, so oblivious to what you've seen. A pang of dread hits you."
         }
     },
-    "front_door": {
-        "description": (
-            "The front door leading outside. The world beyond awaits, oblivious to the ticking clock."
-        ),
-        "exits": {"bedroom": "bedroom", "living room": "living_room", "town": "town_square", "school": "school_entrance"},
-        "interactions": {
-            "open door": "The fresh morning air hits you. The town is still quiet, bathed in an innocent light."
-        }
-    },
+
     "town_square": {
         "description": (
             "The heart of your small town. A few people are already out and about. The day feels like any other, "
             "but you know time is running out."
         ),
-        "exits": {"front door": "front_door", "bus station": "bus_stop", "town hall": "town_hall",
+        "exits": {"bus station": "bus_stop", "town hall": "town_hall",
                   "tech store": "tech_store", "military base": "military_base",
                   "general store": "general_store", "pawn shop": "pawn_shop"},
         "interactions": {
@@ -209,7 +201,7 @@ locations = {
         "description": (
             "The main entrance to your high school. The morning buzz of students is absent, replaced by an eerie quiet."
         ),
-        "exits": {"home": "front_door", "town": "town_square", "newspaper club": "newspaper_club"},
+        "exits": {"town": "town_square", "newspaper club": "newspaper_club"},
         "interactions": {
             "go to class": "You consider attending your morning classes.",
             "look around": "The empty halls stretch before you. School is almost unsettlingly quiet."

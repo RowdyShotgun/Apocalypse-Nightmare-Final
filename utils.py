@@ -165,6 +165,19 @@ def colorize_time(time_left):
     """Adds time color to time remaining."""
     return f"{COLORS['time']}{time_left}{Style.RESET_ALL}"
 
+def create_progress_bar(current, maximum, width=20):
+    """Creates a visual progress bar."""
+    filled = int((current / maximum) * width)
+    bar = "█" * filled + "░" * (width - filled)
+    return f"[{bar}] {current}/{maximum}"
+
+def dramatic_pause(seconds=2):
+    """Creates a dramatic pause with dots."""
+    for i in range(3):
+        print(".", end="", flush=True)
+        time.sleep(seconds / 3)
+    print()
+
 def strip_ansi(text):
     """Remove ANSI color codes from a string for accurate width calculation."""
     ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
@@ -188,11 +201,20 @@ def create_box(text, width=None, color=COLORS['box']):
         content_width = len(visible_text)
         width = content_width + 4
     
-    top_bottom = "─" * (width - 2)
-    box = f"{color}┌{top_bottom}┐{Style.RESET_ALL}\n"
-    box += f"{color}│ {text.center(content_width)} │{Style.RESET_ALL}\n"
-    box += f"{color}└{top_bottom}┘{Style.RESET_ALL}"
-    return box
+    # Create the box borders using simple ASCII characters for better compatibility
+    top_bottom = "-" * (width - 2)
+    
+    # Build the box with proper color handling
+    box_lines = []
+    box_lines.append(f"{color}+{top_bottom}+{Style.RESET_ALL}")
+    
+    # Center the text properly
+    centered_text = text.center(content_width)
+    box_lines.append(f"{color}| {centered_text} |{Style.RESET_ALL}")
+    
+    box_lines.append(f"{color}+{top_bottom}+{Style.RESET_ALL}")
+    
+    return "\n".join(box_lines)
 
 def create_countdown_box(time_left, phase):
     """Creates a special countdown box with time and phase, handling color codes properly."""

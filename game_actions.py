@@ -41,6 +41,13 @@ def advance_time(hours=1, silent=False):
 
     game_state["current_day_phase"] = new_day_phase
 
+    # Add time feedback for non-silent time advances
+    if not silent and hours > 0.1:  # Only show for significant time advances
+        if hours >= 1:
+            print_slow(f"⏰ {hours} hour(s) have passed.", mode='fast')
+        else:
+            print_slow(f"⏰ {hours * 60:.0f} minutes have passed.", mode='fast')
+
     # Add specific time-triggered narrative events
     if game_state["time_remaining"] <= 10 and not game_state["news_warning_issued"]:
         print_slow(
@@ -61,6 +68,30 @@ def advance_time(hours=1, silent=False):
             mode='slow'
         )
         game_state["military_activity_noticed"] = True
+
+def build_jake_trust_opportunity():
+    """Creates an opportunity to build trust with Jake through random events or specific actions."""
+    # Only trigger if Jake's trust is still low and we haven't had this opportunity yet
+    if (game_state["trust_jake"] <= 2 and 
+        not game_state.get("jake_trust_opportunity_given", False) and
+        random.random() < 0.3):  # 30% chance when conditions are met
+        
+        print_slow("\nYou notice Jake being hassled by some older kids in the hallway.")
+        print_slow("They're making fun of his jacket and pushing him around.")
+        
+        choice = input("Do you want to step in and help? (yes/no): ").strip().lower()
+        if choice in ["yes", "y"]:
+            print_slow("You step forward. 'Hey, leave him alone!'")
+            print_slow("The older kids look surprised, then back off. 'Whatever, losers.'")
+            print_slow("Jake looks at you with a mix of surprise and gratitude.")
+            game_state["trust_jake"] += 2
+            print_slow("Jake's trust in you has increased!")
+        else:
+            print_slow("You decide not to get involved. Jake shoots you a disappointed look.")
+            game_state["trust_jake"] -= 1
+        
+        game_state["jake_trust_opportunity_given"] = True
+        advance_time(0.5, silent=True)
 
 # This display_location function should be called by menus.py to show current location info
 def display_location():
@@ -155,6 +186,7 @@ def handle_talk_alex_action(choice_num):
             print_slow("Alex seems a bit awkward. He quickly changes the subject, clearly unconvinced by your vision.", mode='slow')
         else:
             print_slow("Alex avoids eye contact and grunts a non-committal response. He's clearly trying to distance himself.", mode='slow')
+    input("Press Enter to continue...")
     advance_time(0.5, silent=True)
 
 def handle_talk_maya_action(choice_num):
@@ -186,6 +218,7 @@ def handle_talk_maya_action(choice_num):
             print_slow("Maya tries to offer comfort, but her voice is strained. She's clearly thinks you're overwhelmed.", mode='slow')
         else:
             print_slow("Maya avoids eye contact and quickly finds an excuse to leave. She's clearly uncomfortable around you now.", mode='slow')
+    input("Press Enter to continue...")
     advance_time(0.5, silent=True)
 
 def handle_talk_ben_action(choice_num):
@@ -235,6 +268,7 @@ def handle_talk_ben_action(choice_num):
             print_slow("Ben gives you a sympathetic look but quickly shifts the conversation to something more concrete.", mode='slow')
         else:
             print_slow("Ben avoids eye contact and finds an excuse to fiddle with his radio, clearly uncomfortable with you.", mode='slow')
+    input("Press Enter to continue...")
     advance_time(0.5, silent=True)
 
 def print_jake_post_vision_dialogue():
@@ -279,6 +313,20 @@ def handle_talk_jake_action(choice_num):
             else:
                 print_slow("Jake seems surprised, a flicker of respect in his eyes. 'Whoa, feisty today. Watch it.'")
                 game_state["trust_jake"] += 1
+        elif choice_num == 4: # NEW: Show him respect or offer help.
+            print_slow("You approach Jake differently. 'Hey, I know things are rough. Need any help with anything?'")
+            if game_state["trust_jake"] <= 2:
+                print_slow("Jake looks surprised, then suspicious. 'Why would you help me?' But there's a hint of curiosity.")
+                game_state["trust_jake"] += 1
+                print_slow("Jake seems to appreciate the gesture, even if he's not sure about your motives.")
+            else:
+                print_slow("Jake nods slightly. 'Maybe. Thanks.' He seems to appreciate the offer.")
+                game_state["trust_jake"] += 1
+        elif choice_num == 5: # NEW: Stand up for him or defend him.
+            print_slow("You notice someone else giving Jake trouble. You step in to help.")
+            print_slow("Jake looks at you with a mix of surprise and grudging respect.")
+            game_state["trust_jake"] += 2
+            print_slow("Jake seems to remember this gesture. 'Thanks... I guess.'")
     else: # If Jake has already been told the vision
         print_jake_post_vision_dialogue()
     advance_time(0.5, silent=True)
@@ -335,7 +383,8 @@ def handle_computer_use_action(choice_num):
             "It makes the world seem too big, your vision too small."
         )
         game_state["knowledge"] += 1
-        print_slow("You feel a little more prepared.")
+        print_slow("🧠 You gained Knowledge! (Research & Learning)")
+        print_slow("💡 Tip: Knowledge helps you understand technology and convince others.")
         advance_time(1)
     elif choice_num == 2: # Look for unusual local news reports.
         print_slow(
@@ -344,8 +393,9 @@ def handle_computer_use_action(choice_num):
         )
         game_state["knowledge"] += 2
         print_slow(
-            "You've found some unsettling local **Knowledge**, enough to make you more confident your vision wasn't just a dream."
+            "🧠 You gained Knowledge! (Research & Learning)"
         )
+        print_slow("💡 Tip: Knowledge helps you understand technology and convince others.")
         advance_time(1)
     elif choice_num == 3: # Check for survival guides or emergency bunkers.
         print_slow("You search for guides on surviving an apocalypse and local private bunkers.")
@@ -372,6 +422,7 @@ def handle_computer_use_action(choice_num):
         advance_time(1)
     elif choice_num == 4: # Stop using the computer.
         print_slow("You close the computer, feeling a mix of dread and growing certainty.")
+        input("Press Enter to continue...")
         advance_time(0.5, silent=True)
         return True # Signal to the menu to go back
     return False # Signal to the menu to stay in computer menu
@@ -424,8 +475,16 @@ def handle_gather_supplies_action(choice_num):
         game_state["current_location"] = "burger_hut"
         print_slow(f"You head to the Burger Hut.")
     elif choice_num == 3: # Search for items at Home.
-        game_state["current_location"] = "bedroom" # Setting location for search_home_menu
-        print_slow(f"You head back home to search.")
+        print_slow("You search through your home, starting with the kitchen.")
+        if "kitchen_supplies_taken" not in game_state["inventory"]:
+            print_slow("In the kitchen, you find some canned goods and non-perishable food items.")
+            game_state["inventory"].append("kitchen_supplies_taken")
+            game_state["inventory"].append("supplies")
+            print_slow("You found some **Supplies** from the kitchen!")
+        else:
+            print_slow("You've already searched the kitchen thoroughly. There's nothing else useful here.")
+        input("Press Enter to continue...")
+        advance_time(0.5, silent=True)
     elif choice_num == 4: # Go back.
         print_slow("You decide to rethink gathering supplies.")
         advance_time(0.1, silent=True)
@@ -442,6 +501,7 @@ def handle_involve_friends_escape_action(choice_num):
             print_slow(f"You head towards the neighbor's bunker.")
         else:
             print_slow("You don't know enough about a neighbor's bunker to seek it out. Maybe try researching it first?")
+            input("Press Enter to continue...")
             advance_time(0.1, silent=True)
     elif choice_num == 3: # Go back.
         print_slow("You decide to rethink involving friends in your escape.")
@@ -478,7 +538,36 @@ def handle_general_store_interaction_action(choice_num):
         print_slow("'Kid, just pay for your candy,' he grunts, clearly not believing a word.")
         game_state["authority_of_town"] -= 0.5
         print_slow("You feel less credible in this town.")
-    elif choice_num == 4: # Leave the store.
+    elif choice_num == 4: # Help Mr. Jenkins with heavy boxes.
+        if not game_state.get("jenkins_helped", False):
+            print_slow("You notice Mr. Jenkins struggling with some heavy boxes in the back of the store.")
+            print_slow("'Hey kid, give me a hand with these boxes? I'll give you something for your trouble.'")
+            
+            choice = input("Help Mr. Jenkins? (yes/no): ").strip().lower()
+            if choice in ["yes", "y"]:
+                print_slow("You help Mr. Jenkins move the heavy boxes to the storage room.")
+                
+                # 15% chance of breaking the box and getting kicked out
+                if random.random() < 0.15:
+                    print_slow("CRASH! One of the boxes slips from your grip and breaks open.")
+                    print_slow("'What did you do?!' Mr. Jenkins yells. 'Get out of my store! You're banned!'")
+                    game_state["jenkins_banned"] = True
+                    game_state["current_location"] = "town_square"
+                    print_slow("You've been banned from the general store for the rest of the game.")
+                else:
+                    print_slow("The boxes are moved safely. Mr. Jenkins nods appreciatively.")
+                    print_slow("'Thanks, kid. Here, take some supplies as payment.'")
+                    game_state["inventory"].append("supplies")
+                    print_slow("You gained some **Supplies**!")
+                    game_state["authority_of_town"] += 0.5
+                    print_slow("Mr. Jenkins seems to respect you more now.")
+                
+                game_state["jenkins_helped"] = True
+            else:
+                print_slow("'Suit yourself,' Mr. Jenkins grumbles, continuing to struggle with the boxes.")
+        else:
+            print_slow("You've already helped Mr. Jenkins with the boxes.")
+    elif choice_num == 5: # Leave the store.
         print_slow("You leave the general store.")
         game_state["current_location"] = "town_square"
     advance_time(0.5)
@@ -570,7 +659,22 @@ def handle_go_to_class_action():
         game_state["knowledge"] += knowledge_gain
         advance_time(2)
         game_state["has_attended_class"] = True # NEW: Set flag after attending
-        print_slow("You feel slightly more informed, but less calm.")
+        print_slow(f"🧠 You gained {knowledge_gain} Knowledge! (Research & Learning)")
+        print_slow("💡 Tip: Knowledge helps you understand technology and convince others.")
+        
+        # Small trust boost for being in class with Jake (shows you're not avoiding him)
+        if game_state["trust_jake"] <= 2:
+            print_slow("Jake notices you actually showed up to class. He gives you a slight nod of acknowledgment.")
+            game_state["trust_jake"] += 1
+            print_slow("Jake's trust in you has increased slightly!")
+        
+        # NEW: Supplies reward for attending class (represents gathering supplies from school)
+        if "school_supplies_taken" not in game_state["inventory"]:
+            print_slow("After class, you manage to grab some supplies from the school's emergency kit.")
+            game_state["inventory"].append("school_supplies_taken")
+            game_state["inventory"].append("supplies")
+            print_slow("You gained some **Supplies** from school!")
+        
         # After class, present menu to talk to Jake or return
         while True:
             print_slow("After class, you see Jake lingering by the door.")
@@ -585,6 +689,7 @@ def handle_go_to_class_action():
                 print_slow("Invalid choice. Please enter 1 or 2.")
     else:
         print_slow("You've already attended class today. There's nothing new to learn from another lecture.")
+        input("Press Enter to continue...")
         advance_time(0.1, silent=True) # Small time cost for trying again
 
 
@@ -595,6 +700,7 @@ def handle_bunker_access_action(action_type):
     """Handles specific choices for bunker access."""
     if action_type == "examine door":
         print_slow(locations["neighbors_bunker"]["interactions"]["examine door"])
+        input("Press Enter to continue...")
         advance_time(0.5, silent=True)
     elif action_type == "knock":
         if not game_state["bunker_unlocked"]:
@@ -810,13 +916,83 @@ def display_inventory():
         for item in game_state["inventory"]:
             print_colored(f"• {colorize_item(item.replace('_', ' ').title())}", "inventory")
     
+    # Show resource counters
+    print_colored("\n📊 RESOURCE COUNTERS:", "info")
+    print_colored(f"🧠 Knowledge: {game_state['knowledge']} (Research & Learning)", "highlight")
+    print_colored(f"🔧 Tech Parts: {game_state['tech_parts']} (Electronic Components)", "item")
+    print_colored(f"💰 Cash: {game_state['cash']} unit(s) (Currency)", "money")
+    
+    # Check if player can break down stolen calculator
+    if "stolen_calculator" in game_state["inventory"] and game_state["knowledge"] >= 4:
+        print_colored("\n🔧 You could break down the stolen calculator for tech parts!", "highlight")
+        print_colored("💡 Tip: Knowledge helps you understand how to break down electronics.", "info")
+        choice = input("Break down calculator for tech parts? (yes/no): ").strip().lower()
+        if choice in ["yes", "y"]:
+            print_slow("You carefully disassemble the calculator, salvaging the circuit board and other electronic components.")
+            game_state["inventory"].remove("stolen_calculator")
+            game_state["tech_parts"] += 1
+            print_slow("You gained a **Tech Part** from the calculator!")
+            input("Press Enter to continue...")
+            advance_time(0.5, silent=True)
+    
     print("-" * 30)
     input("Press Enter to continue...")
-    advance_time(0.1, silent=True)
 
 
 # --- Ending Functions (called by main_menu_loop when ending_achieved is set) ---
 # These functions should ONLY print the narrative.
+
+def display_mushroom_cloud():
+    """Displays ASCII mushroom cloud for dramatic effect."""
+    mushroom_cloud = """
+     _.-^^---....,,--
+ _--                  --_
+<                        >)
+|                         |
+ \._                   _./
+    ```--. . , ; .--'''
+          | |   |
+       .-=||  | |=-.
+       `-=#######=-'
+          | ;  :|
+ _____.,-#######~,._____
+"""
+    print_slow(mushroom_cloud)
+
+def get_contextual_hint():
+    """Provides contextual hints based on current game state."""
+    hints = []
+    
+    # Time-based hints
+    if game_state["time_remaining"] <= 3:
+        hints.append("⏰ Time is running out! Focus on your most important goals.")
+    
+    # Resource-based hints
+    if game_state["knowledge"] < 3:
+        hints.append("🧠 Consider attending class or using the computer to gain knowledge.")
+    if game_state["tech_parts"] < 1:
+        hints.append("🔧 You might need tech parts for advanced actions.")
+    if game_state["cash"] < 2:
+        hints.append("💰 You could work at Burger Hut or sell items for cash.")
+    
+    # Trust-based hints
+    if game_state["trust_alex"] < 3:
+        hints.append("🔍 Alex might have useful information if you gain his trust.")
+    if game_state["trust_maya"] < 3:
+        hints.append("💝 Maya could provide moral support and encouragement.")
+    if game_state["trust_ben"] < 3:
+        hints.append("🔧 Ben's practical knowledge could be valuable.")
+    if game_state["trust_jake"] < 2:
+        hints.append("👊 Jake might help if you show him respect.")
+    
+    # Location-based hints
+    if game_state["current_location"] == "bedroom" and game_state["time_remaining"] > 8:
+        hints.append("🏠 You're safe at home, but time is ticking.")
+    if game_state["current_location"] == "town_square":
+        hints.append("🏛️ The town square connects to many important locations.")
+    
+    return hints[0] if hints else "💡 Explore different locations and talk to people to discover your options."
+
 def handle_allies_escape_ending():
     print_slow("--- Ending Achieved: Allies Escape ---", color=Fore.RED)
     print_slow(
@@ -828,6 +1004,8 @@ def handle_allies_escape_ending():
         "but not alone.", color=Fore.RED
     )
     print_slow("This is just the beginning of your struggle for survival, together.", color=Fore.RED)
+    print_slow("...", color=Fore.RED)
+    display_mushroom_cloud()
     input("\nPress Enter to continue...")
 
 def handle_solo_escape_ending():
@@ -838,6 +1016,8 @@ def handle_solo_escape_ending():
         "The weight of survival rests entirely on your shoulders.", color=Fore.RED
     )
     print_slow("This new world is a desolate place, but you have a chance to carve out a new existence.", color=Fore.RED)
+    print_slow("...", color=Fore.RED)
+    display_mushroom_cloud()
     input("\nPress Enter to continue...")
 
 def handle_town_evacuated_ending():
@@ -854,6 +1034,8 @@ def handle_town_evacuated_ending():
         "You watch the last bus disappear over the horizon, a bittersweet victory. Your town is gone, but its "
         "spirit lives on through its people.", color=Fore.RED
     )
+    print_slow("...", color=Fore.RED)
+    display_mushroom_cloud()
     input("\nPress Enter to continue...")
 
 def handle_missile_destroyed_ending():
@@ -869,6 +1051,45 @@ def handle_missile_destroyed_ending():
     ]
     for i, line in enumerate(lines):
         print_slow(line, color=rainbow[i % len(rainbow)])
+    
+    # Display the dramatic ASCII art
+    victory_art = """
+                       d*##*.
+ zP******e.           *    *o
+4*       *          *      *
+*        *        J*       *F
+ b        *k       *>       *
+  *k        *r     J*       d*
+  *         *     *       *~
+   *        *   *E       *
+    *         *L   *      *F
+     *.       4B   *      ******b
+     *        *.  **     **      *F
+      *       R*  *F     *      *
+       *k      ?* u*     dF      .*
+       ^*.      **     z*      u****e
+        #*b             *E.dW@e*    ?*
+         #*           .o**# d****c    ?F
+          *      .d**# . zo*>   #*r .uF
+          *L .u**      *&***k   .**d**F
+           **            ^***P*P9*
+          JP              .o****u:*P **
+          *          ..ue*      *"
+         d*          *F              *
+         **     ....udE             4B
+          #*    **** *r            @*
+           ^*L        *            *F
+             RN        4N           *
+              *b                  d*
+               **k                 *F
+               **b                *F
+                 **               *F
+                 *                *
+                  *L               *
+                  *               *
+                   *               *
+"""
+    print_slow(victory_art, color=Fore.GREEN)
     input("\nPress Enter to continue...")
 
 # These are specific ending messages that will be called from menus.py
@@ -877,6 +1098,7 @@ def handle_time_up_ending():
     print_slow("The sky darkens. A distant rumble grows louder, then deafening.", color=Fore.RED)
     print_slow("There's nowhere left to run. The vision was true.", color=Fore.RED)
     print_slow("...", color=Fore.RED)
+    display_mushroom_cloud()
     print_slow("The end.", color=Fore.RED)
     input("\nPress Enter to continue...")
 
@@ -885,8 +1107,39 @@ def handle_jailed_ending():
     print_slow("The cold cell bars are your last sight. Your desperate warnings are met with mockery. You are trapped.", color=Fore.RED)
     print_slow("The distant, growing rumble is all the proof you needed. Your efforts end here, in despair.", color=Fore.RED)
     print_slow("...", color=Fore.RED)
+    display_mushroom_cloud()
     print_slow("The end.", color=Fore.RED)
     input("\nPress Enter to continue...")
+
+def handle_truck_escape_ending():
+    """Handles the truck escape ending - requires truck keys and sufficient gas."""
+    if game_state["time_remaining"] <= 0:
+        print_slow("You try to start the truck, but time has run out.")
+        return False
+        
+    if "truck_keys" not in game_state["inventory"]:
+        print_slow("You don't have the truck keys. You can't start the vehicle.")
+        print_slow("💡 Tip: You need to get the truck keys from Mr. Henderson first.")
+        return False
+        
+    if game_state["car_gas"] < 30:
+        print_slow("The truck sputters and dies. There's not enough gas to get out of town.")
+        print_slow(f"💡 Tip: You need at least 30% gas to escape. Current gas: {game_state['car_gas']}%")
+        return False
+    
+    print_slow("You turn the key in Mr. Henderson's truck. The engine roars to life!")
+    print_slow("With a full tank of gas, you have enough fuel to escape the town.")
+    
+    # Check if friends are coming along
+    if (game_state.get("has_shared_vision_with_friends", False) and
+        game_state["trust_alex"] >= 4 and game_state["trust_maya"] >= 4 and game_state["trust_ben"] >= 4):
+        print_slow("Your friends pile into the truck with you. Together, you drive away from the doomed town.")
+        game_state["ending_achieved"] = "Allies Escape"
+    else:
+        print_slow("You drive alone, leaving the town behind as you head for safety.")
+        game_state["ending_achieved"] = "Solo Escape"
+    
+    return True
 
 # New alternative buying logic for tech parts
 def buy_tech_parts_action():
@@ -899,6 +1152,7 @@ def buy_tech_parts_action():
         game_state["tech_parts"] += 1
         game_state["inventory"].append("circuit board")
         print_slow_colored(f"You bought some {colorize_item('**Tech Parts**')} for {colorize_money(f'{tech_parts_cost} cash unit(s)')}!", "success")
+        print_slow_colored("🔧 Tech Parts are electronic components needed for advanced technology.", "info")
         advance_time(0.5)
     else:
         cash_amount = f"{game_state['cash']} cash unit(s)"
@@ -913,6 +1167,20 @@ def handle_steal_school_action():
         print_slow("You manage to swipe a calculator from a teacher's desk without being noticed." + (" Your backpack helps you hide it." if has_backpack else ""))
         game_state["inventory"].append("stolen_calculator")
         print_slow("You gained a **Stolen Calculator**!")
+        
+        # Check if player can break it down for tech parts
+        if game_state["knowledge"] >= 4:
+            print_slow("You examine the calculator and realize you could break it down for useful electronic components.")
+            print_slow("💡 Tip: Your knowledge helps you understand how to break down electronics.")
+            choice = input("Break down the calculator for tech parts? (yes/no): ").strip().lower()
+            if choice in ["yes", "y"]:
+                print_slow("You carefully disassemble the calculator, salvaging the circuit board and other electronic components.")
+                game_state["inventory"].remove("stolen_calculator")
+                game_state["tech_parts"] += 1
+                print_slow("🔧 You gained a Tech Part from the calculator!")
+                print_slow("💡 Tip: Tech Parts are electronic components needed for advanced technology.")
+            else:
+                print_slow("You decide to keep the calculator intact for now.")
     else:
         print_slow("You get caught trying to steal! The principal is called, and soon the police arrive.")
         game_state["ending_achieved"] = "Jailed"
@@ -928,8 +1196,69 @@ def handle_steal_tech_store_action():
         # Convert stolen tech part to usable tech part
         game_state["tech_parts"] += 1
         game_state["inventory"].remove("stolen_tech_part")
-        print_slow("The stolen tech part is now usable for your technical needs.")
+        print_slow("🔧 The stolen tech part is now usable for your technical needs.")
+        print_slow("💡 Tip: Tech Parts are electronic components needed for advanced technology.")
     else:
         print_slow("You get caught trying to steal! The store owner calls the police.")
         game_state["ending_achieved"] = "Jailed"
     advance_time(0.5)
+
+def handle_pawn_shop_sell_action():
+    """Handles selling stolen items at the pawn shop."""
+    from utils import colorize_money, print_slow_colored
+    
+    sellable = [item for item in game_state["inventory"] if item.startswith("stolen_") or item == "gas_can"]
+    if not sellable:
+        print_slow("You have nothing the pawn shop wants right now.")
+        print_slow("💡 Tip: The pawn shop buys stolen items and gas cans.")
+        return
+    
+    print_slow("Items you can sell:")
+    for idx, item in enumerate(sellable, 1):
+        print_slow_colored(f"{idx}. {item.replace('_', ' ').title()}", "inventory")
+    print_slow_colored(f"{len(sellable)+1}. Cancel", "warning")
+    
+    choice = input("> ").strip()
+    if choice.isdigit() and 1 <= int(choice) <= len(sellable):
+        item = sellable[int(choice)-1]
+        game_state["inventory"].remove(item)
+        game_state["cash"] += 1
+        print_slow_colored(f"You sell the {item.replace('_', ' ')} for {colorize_money('1 cash unit')}!", "success")
+        print_slow("💡 Tip: You can use this cash to buy gas or other supplies.")
+    else:
+        print_slow("You decide not to sell anything.")
+    
+    advance_time(0.1, silent=True)
+
+
+def handle_truck_travel_action(destination):
+    """Handles truck travel between locations - faster than walking but uses gas."""
+    if "truck_keys" not in game_state["inventory"]:
+        print_slow("You don't have the truck keys. You can't drive anywhere.")
+        print_slow("💡 Tip: You need to get the truck keys from Mr. Henderson first.")
+        return False
+        
+    if game_state["car_gas"] < 10:
+        print_slow("The truck won't start. There's not enough gas for even a short trip.")
+        print_slow(f"💡 Tip: You need at least 10% gas to start the truck. Current gas: {game_state['car_gas']}%")
+        return False
+    
+    # Gas cost for travel (varies by distance)
+    gas_cost = 5  # Base cost for any trip
+    
+    if game_state["car_gas"] < gas_cost:
+        print_slow(f"You need at least {gas_cost}% gas to drive anywhere.")
+        print_slow(f"💡 Tip: Current gas: {game_state['car_gas']}%, Required: {gas_cost}%")
+        return False
+    
+    print_slow("You hop into Mr. Henderson's truck and start the engine.")
+    print_slow(f"The drive to {destination.replace('_', ' ').title()} is quick and smooth.")
+    
+    # Deduct gas and time
+    game_state["car_gas"] -= gas_cost
+    game_state["current_location"] = destination
+    advance_time(0.5, silent=True)  # Much faster than walking (which takes 1-2 hours)
+    
+    print_slow(f"You arrive at {destination.replace('_', ' ').title()}. Gas remaining: {game_state['car_gas']}%")
+    print_slow("⏰ Time saved: Truck travel is much faster than walking!")
+    return True

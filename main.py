@@ -19,12 +19,17 @@ def game():
     from utils import print_slow_colored, colorize_name, create_box
 
     # Create welcome box
-    welcome_box = create_box("🌍 APOCALYPSE NIGHTMARE 🌍")
+    welcome_box = create_box("APOCALYPSE NIGHTMARE")
     print(welcome_box)
     
     print_slow_colored("Welcome to Apocalypse Nightmare!", "highlight", mode='slow')
     print_slow_colored("Press Enter to begin...", "info", mode='slow')
     input()
+    
+    # Add dramatic loading effect
+    from utils import dramatic_pause
+    print_slow_colored("Loading your apocalyptic journey", "info", mode='slow')
+    dramatic_pause(1.5)
     # Prompt for protagonist name
     print_slow_colored("What is your name? (Press Enter for default)", "info")
     from utils import safe_input

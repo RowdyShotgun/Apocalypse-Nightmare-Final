@@ -24,7 +24,9 @@ from game_actions import (
     display_inventory, handle_allies_escape_ending, handle_solo_escape_ending,
     handle_town_evacuated_ending, handle_missile_destroyed_ending,
     handle_time_up_ending, handle_jailed_ending, buy_tech_parts_action,
-    handle_steal_school_action, handle_steal_tech_store_action, handle_jake_favor_action
+    handle_steal_school_action, handle_steal_tech_store_action, handle_jake_favor_action,
+    build_jake_trust_opportunity, handle_truck_escape_ending, handle_truck_travel_action,
+    handle_pawn_shop_sell_action
 )
 from colorama import Fore
 
@@ -36,14 +38,19 @@ def display_menu(options):
     
     while True: # Loop until valid input
         for idx, (desc, _) in enumerate(options, 1):
-            print_colored(f"{idx}. {desc}", "info")
+            # Determine color based on option type
+            if any(utility in desc.lower() for utility in ["show inventory", "show status", "help", "quit", "go back"]):
+                print_colored(f"{idx}. {desc}", "warning")  # Utility options in warning color
+            else:
+                print_colored(f"{idx}. {desc}", "info")     # Navigation/action options in info color
         
         try:
             choice_str = input("\nEnter your choice: ").strip()
             if choice_str.isdigit() and 1 <= int(choice_str) <= len(options):
                 return options[int(choice_str) - 1][1] # Return the function/lambda directly
             else:
-                print_colored("Invalid choice. Please enter the number corresponding to your action.", "warning")
+                print_colored("❌ Invalid choice. Please enter the number corresponding to your action.", "warning")
+                print_colored(f"💡 Tip: Type a number between 1 and {len(options)}", "info")
                 # Re-display location information after invalid input
                 from game_actions import display_location
                 display_location()
@@ -74,23 +81,25 @@ def exit_game():
 
 def display_status():
     """Displays comprehensive player status."""
-    from utils import colorize_location, colorize_time, colorize_money, colorize_name, print_colored, create_box
+    from utils import colorize_money, colorize_name, print_colored, create_box
     
     # Create status header box
     status_box = create_box("📊 PLAYER STATUS")
     print(status_box)
     
-    print_colored(f"📍 Current Location: {colorize_location(game_state['current_location'].replace('_', ' ').title())}", "info")
-    time_info = f"{game_state['time_remaining']}h ({game_state['current_day_phase'].title()})"
-    print_colored(f"⏰ Time Remaining: {colorize_time(time_info)}", "time")
-    print_colored(f"🧠 Knowledge: {game_state['knowledge']}", "highlight")
-    print_colored(f"🔧 Tech Parts: {game_state['tech_parts']}", "item")
+    # Resources & Stats
+    print_colored("🎯 RESOURCES & STATS", "highlight")
+    print_colored(f"🧠 Knowledge: {game_state['knowledge']} (Research & Learning)", "highlight")
+    print_colored(f"🔧 Tech Parts: {game_state['tech_parts']} (Electronic Components)", "item")
     cash_amount = f"{game_state['cash']} unit(s)"
-    print_colored(f"💰 Cash: {colorize_money(cash_amount)}", "money")
-    print_colored(f"🏛️ Authority: {game_state['authority_of_town']}", "info")
+    print_colored(f"💰 Cash: {colorize_money(cash_amount)} (Currency)", "money")
+    print_colored(f"🏛️ Authority: {game_state['authority_of_town']} (Town Influence)", "info")
+    
+    # Key Items & Access
+    print_colored("\n🔑 KEY ITEMS & ACCESS", "highlight")
     print_colored(f"🎒 Has Backpack: {'Yes' if INVENTORY_ITEMS['BACKPACK'] in game_state['inventory'] else 'No'}", "inventory")
     print_colored(f"🔑 Has Car Keys: {'Yes' if game_state['has_car_keys'] else 'No'}", "item")
-    print_colored(f"⛽ Car Gas: {game_state['car_gas']}%", "info")
+    print_colored(f"⛽ Car Gas: {game_state['car_gas']}% (Truck Fuel)", "info")
     print_colored(f"🏰 Bunker Unlocked: {'Yes' if game_state['bunker_unlocked'] else 'No'}", "success")
     
     # Friend relationships section
@@ -100,8 +109,55 @@ def display_status():
     print_colored(f"- {colorize_name('Ben')} (Pragmatist): {game_state['trust_ben']} / 10", "character")
     print_colored(f"- {colorize_name('Jake')} (Bully): {game_state['trust_jake']} / 10", "character")
     
+    # Show ending progress hints
+    print_colored("\n🎯 ENDING PROGRESS", "highlight")
+    
+    # Missile Destroyed ending requirements
+    if game_state["knowledge"] >= 7 and game_state["tech_parts"] >= 2:
+        print_colored("✅ Ready for Missile Destroyed ending!", "success")
+    else:
+        missing = []
+        if game_state["knowledge"] < 7:
+            missing.append(f"Knowledge ({game_state['knowledge']}/7)")
+        if game_state["tech_parts"] < 2:
+            missing.append(f"Tech Parts ({game_state['tech_parts']}/2)")
+        print_colored(f"❌ Missile Destroyed: Need {', '.join(missing)}", "warning")
+    
+    # Allies Escape ending requirements
+    if (game_state.get("has_shared_vision_with_friends", False) and
+        game_state["trust_alex"] >= 4 and game_state["trust_maya"] >= 4 and game_state["trust_ben"] >= 4):
+        print_colored("✅ Ready for Allies Escape ending!", "success")
+    else:
+        missing = []
+        if not game_state.get("has_shared_vision_with_friends", False):
+            missing.append("Share vision with friends")
+        if game_state["trust_alex"] < 4:
+            missing.append(f"Alex trust ({game_state['trust_alex']}/4)")
+        if game_state["trust_maya"] < 4:
+            missing.append(f"Maya trust ({game_state['trust_maya']}/4)")
+        if game_state["trust_ben"] < 4:
+            missing.append(f"Ben trust ({game_state['trust_ben']}/4)")
+        print_colored(f"❌ Allies Escape: Need {', '.join(missing)}", "warning")
+    
+    # Truck Escape ending requirements
+    if ("truck_keys" in game_state["inventory"] and game_state["car_gas"] >= 30):
+        print_colored("✅ Ready for Truck Escape ending!", "success")
+    else:
+        missing = []
+        if "truck_keys" not in game_state["inventory"]:
+            missing.append("Truck keys")
+        if game_state["car_gas"] < 30:
+            missing.append(f"Gas ({game_state['car_gas']}%/30%)")
+        print_colored(f"❌ Truck Escape: Need {', '.join(missing)}", "warning")
+    
     print("-" * 50)
-    advance_time(0.1, silent=True) # Small time cost for checking status
+    
+    # Show contextual hint
+    from game_actions import get_contextual_hint
+    hint = get_contextual_hint()
+    print_colored(f"\n💡 HINT: {hint}", "info")
+    
+    input("Press Enter to continue...")
 
 
 # --- Location-Specific Menu Handlers ---
@@ -113,11 +169,9 @@ def handle_bedroom_menu():
         ("Go to school", lambda: set_location("school_entrance")),
         ("Use computer", handle_computer_use_menu),
         ("Talk to parents", handle_talk_parents_menu),
+        ("Go to living room", lambda: set_location("living_room")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
-        ("Help", lambda: print_slow(
-            "You are at home. You can go to town, go to school, use your computer, or talk to your parents."
-        )),
         ("Quit", exit_game),
     ]
     action = display_menu(options)
@@ -127,28 +181,10 @@ def handle_living_room_menu():
     options = [
         ("Talk to parents", handle_talk_parents_menu),
         ("Go to bedroom", lambda: set_location("bedroom")),
-        ("Go to front door", lambda: set_location("front_door")),
+        ("Go to town", lambda: set_location("town_square")),
+        ("Go to school", lambda: set_location("school_entrance")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
-        ("Help", lambda: print_slow(
-            "Talk to your parents or move between rooms."
-        )),
-        ("Quit", exit_game),
-    ]
-    action = display_menu(options)
-    action()
-
-def handle_front_door_menu():
-    options = [
-        ("Go to town (Town Square)", lambda: set_location("town_square")),
-        ("Go to school (School Entrance)", lambda: set_location("school_entrance")),
-        ("Go to bedroom", lambda: set_location("bedroom")),
-        ("Go to living room", lambda: set_location("living_room")),
-        ("Show inventory", display_inventory),
-        ("Show status", display_status),
-        ("Help", lambda: print_slow(
-            "Leave the house for school or town, or go back inside."
-        )),
         ("Quit", exit_game),
     ]
     action = display_menu(options)
@@ -162,7 +198,7 @@ def handle_town_square_menu():
     options = [
         ("Warn people openly", lambda: handle_shout_warning()),
         ("Work at Burger Hut", lambda: set_location("burger_hut")),
-        ("Go to front door (Home)", lambda: set_location("front_door")),
+        ("Go home (Living Room)", lambda: set_location("living_room")),
         ("Go to bus stop", lambda: set_location("bus_stop")),
         ("Go to town hall", lambda: set_location("town_hall")),
         ("Go to tech store", lambda: set_location("tech_store")),
@@ -171,28 +207,34 @@ def handle_town_square_menu():
         ("Go to pawn shop", lambda: set_location("pawn_shop")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
-        ("Help", lambda: print_slow(
-            "Warn people, work for cash, or move to other key locations."
-        )),
         ("Quit", exit_game),
     ]
+    
+    # Add truck travel options if available
+    options = add_truck_travel_options(options, "town_square")
+    
     action = display_menu(options)
     action()
 
 def handle_school_entrance_menu():
+    # Check for Jake trust building opportunity
+    from game_actions import build_jake_trust_opportunity
+    build_jake_trust_opportunity()
+    
     options = [
         ("Go to class", lambda: handle_go_to_class_action()),
         ("Steal from school", lambda: handle_steal_school_action()),
         ("Go to newspaper club", lambda: set_location("newspaper_club")),
-        ("Go home", lambda: set_location("front_door")),
+        ("Go home (Living Room)", lambda: set_location("living_room")),
         ("Go to town square", lambda: set_location("town_square")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
-        ("Help", lambda: print_slow(
-            "Attend class, steal, visit the newspaper club, or leave school."
-        )),
         ("Quit", exit_game),
     ]
+    
+    # Add truck travel options if available
+    options = add_truck_travel_options(options, "school_entrance")
+    
     action = display_menu(options)
     action()
 
@@ -204,8 +246,9 @@ def handle_newspaper_club_menu():
                 ("Talk to Maya", lambda: handle_talk_maya_menu()),
                 ("Talk to Ben", lambda: handle_talk_ben_menu()),
             ]
-            if game_state.get("jake_owed_favor", False):
-                options.append(("Ask Jake for a favor", lambda: handle_jake_favor_action()))
+            # Show Jake if you've helped him (trust > 2) or if he owes a favor
+            if game_state["trust_jake"] > 2 or game_state.get("jake_owed_favor", False):
+                options.append(("Talk to Jake", lambda: handle_talk_jake_menu()))
             # Use a lambda that returns a sentinel value for Go back
             options.append(("Go back", lambda: "__BACK__"))
             action = display_menu(options)
@@ -217,9 +260,6 @@ def handle_newspaper_club_menu():
         ("Go to school entrance", lambda: set_location("school_entrance")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
-        ("Help", lambda: print_slow(
-            "Chat with your friends or leave the club."
-        )),
         ("Quit", exit_game),
     ]
     action = display_menu(options)
@@ -234,11 +274,12 @@ def handle_general_store_menu():
         ("Go to town square", lambda: set_location("town_square")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
-        ("Help", lambda: print_slow(
-            "Shop for supplies or return to town."
-        )),
         ("Quit", exit_game),
     ]
+    
+    # Add truck travel options if available
+    options = add_truck_travel_options(options, "general_store")
+    
     action = display_menu(options)
     action()
 
@@ -249,9 +290,6 @@ def handle_town_hall_menu():
         ("Go to town square", lambda: set_location("town_square")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
-        ("Help", lambda: print_slow(
-            "Try to get help from town officials or leave."
-        )),
         ("Quit", exit_game),
     ]
     action = display_menu(options)
@@ -278,9 +316,6 @@ def handle_bus_stop_menu():
         ("Go to town square", lambda: set_location("town_square")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
-        ("Help", lambda: print_slow(
-            "Wait for the bus to escape or return to town."
-        )),
         ("Quit", exit_game),
     ]
     action = display_menu(options)
@@ -293,11 +328,12 @@ def handle_tech_store_menu():
         ("Go to town square", lambda: set_location("town_square")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
-        ("Help", lambda: print_slow(
-            "Buy or steal tech parts, or return to town square."
-        )),
         ("Quit", exit_game),
     ]
+    
+    # Add truck travel options if available
+    options = add_truck_travel_options(options, "tech_store")
+    
     action = display_menu(options)
     action()
 
@@ -317,9 +353,6 @@ def handle_military_base_menu():
         ("Go to town square", lambda: set_location("town_square")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
-        ("Help", lambda: print_slow(
-            "Try to enter the military base or return to town."
-        )),
         ("Quit", exit_game),
     ]
     action = display_menu(options)
@@ -327,6 +360,14 @@ def handle_military_base_menu():
 
 
 def handle_outskirts_road_menu():
+    # Check for truck escape ending if player has truck keys and sufficient gas
+    if ("truck_keys" in game_state["inventory"] and 
+        game_state["car_gas"] >= 30 and 
+        game_state["time_remaining"] > 0):
+        from game_actions import handle_truck_escape_ending
+        if handle_truck_escape_ending():
+            return  # Exit menu to trigger game end in main_menu_loop
+    
     options = [
         ("Search for car (Mr. Henderson's truck)",
          lambda: handle_seek_transport_menu()),
@@ -335,9 +376,6 @@ def handle_outskirts_road_menu():
         ("Go to neighbor's bunker", lambda: set_location("neighbors_bunker")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
-        ("Help", lambda: print_slow(
-            "Search for transport, check the bunker, or return to town."
-        )),
         ("Quit", exit_game),
     ]
     action = display_menu(options)
@@ -363,9 +401,6 @@ def handle_neighbors_bunker_menu():
         ("Go to outskirts road", lambda: set_location("outskirts_road")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
-        ("Help", lambda: print_slow(
-            "Try to get into the bunker or go back to the road."
-        )),
         ("Quit", exit_game),
     ]
     action = display_menu(options)
@@ -379,9 +414,6 @@ def handle_burger_hut_menu():
         ("Go to town square", lambda: set_location("town_square")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
-        ("Help", lambda: print_slow(
-            "Earn some cash or head back to the town square."
-        )),
         ("Quit", exit_game),
     ]
     action = display_menu(options)
@@ -390,25 +422,8 @@ def handle_burger_hut_menu():
 
 def handle_pawn_shop_menu():
     # display_location() already called in main_menu_loop
-    def sell_stolen_items():
-        sellable = [item for item in game_state["inventory"] if item.startswith("stolen_") or item == "gas_can"]
-        if not sellable:
-            print_slow("You have nothing the pawn shop wants right now.")
-            return
-        print_slow("Items you can sell:")
-        for idx, item in enumerate(sellable, 1):
-            print(f"{idx}. {item.replace('_', ' ').title()}")
-        print(f"{len(sellable)+1}. Cancel")
-        choice = input("> ").strip()
-        if choice.isdigit() and 1 <= int(choice) <= len(sellable):
-            item = sellable[int(choice)-1]
-            game_state["inventory"].remove(item)
-            game_state["cash"] += 1
-            print_slow(f"You sell the {item.replace('_', ' ')} for 1 cash unit.")
-        else:
-            print_slow("You decide not to sell anything.")
     options = [
-        ("Sell stolen items", sell_stolen_items),
+        ("Sell stolen items", lambda: handle_pawn_shop_sell_action()),
         ("Show inventory", display_inventory),
         ("Return to town square", lambda: set_location("town_square")),
     ]
@@ -538,7 +553,12 @@ def handle_talk_jake_menu():
             ("Tell him about the vision (carefully)", lambda: handle_talk_jake_action(1)),
             ("Ask for a favor (e.g., getting past someone, intimidating someone)", lambda: handle_talk_jake_action(2)),
             ("Challenge his authority (risky)", lambda: handle_talk_jake_action(3)),
+            ("Show him respect or offer help", lambda: handle_talk_jake_action(4)),
+            ("Stand up for him or defend him", lambda: handle_talk_jake_action(5)),
         ]
+        # Add favor option if Jake owes a favor
+        if game_state.get("jake_owed_favor", False):
+            options.append(("Ask Jake for a favor", lambda: handle_jake_favor_action()))
     else:
         # Post-dialogue when vision has already been discussed
         if game_state["trust_jake"] >= 5:
@@ -548,6 +568,9 @@ def handle_talk_jake_menu():
         options = [
             ("Go back", lambda: None),
         ]
+        # Add favor option if Jake owes a favor
+        if game_state.get("jake_owed_favor", False):
+            options.append(("Ask Jake for a favor", lambda: handle_jake_favor_action()))
     action = display_menu(options)
     if action: action()
 
@@ -565,12 +588,21 @@ def handle_town_hall_interaction_menu():
 
 
 def handle_general_store_interaction_menu():
+    # Check if player is banned from the store
+    if game_state.get("jenkins_banned", False):
+        print_slow("You approach the General Store, but Mr. Jenkins spots you through the window.")
+        print_slow("'Get lost, kid! You're not welcome here anymore!' he shouts, pointing to a 'BANNED' sign.")
+        print_slow("You've been permanently banned from the General Store.")
+        game_state["current_location"] = "town_square"
+        return
+    
     print_slow("You enter the General Store. Mr. Jenkins, the proprietor, is behind the counter.")
     options = [
         ("Try to buy supplies (e.g., food, gas)", lambda: handle_general_store_interaction_action(1)),
         ("Attempt to steal supplies", lambda: handle_steal_general_store_sub_menu()), # This leads to a sub-menu for stealing
         ("Talk to Mr. Jenkins about the situation", lambda: handle_general_store_interaction_action(3)),
-        ("Leave the store", lambda: handle_general_store_interaction_action(4)),
+        ("Help Mr. Jenkins with heavy boxes", lambda: handle_general_store_interaction_action(4)),
+        ("Leave the store", lambda: handle_general_store_interaction_action(5)),
     ]
     action = display_menu(options)
     if action: action()
@@ -606,12 +638,20 @@ def handle_seek_transport_menu():
 def handle_gather_supplies_menu():
     print_slow("You need supplies for survival or to fuel your escape.")
     while True:
-        options = [
-            ("Go to the General Store (buy or steal)", lambda: handle_gather_supplies_action(1)),
+        options = []
+        
+        # Check if player is banned from general store
+        if game_state.get("jenkins_banned", False):
+            options.append(("General Store (BANNED - cannot enter)", lambda: print_slow("You've been banned from the General Store.")))
+        else:
+            options.append(("Go to the General Store (buy or steal)", lambda: handle_gather_supplies_action(1)))
+        
+        options.extend([
             ("Go to Burger Hut (earn cash)", lambda: handle_gather_supplies_action(2)),
             ("Search for items at Home", lambda: handle_gather_supplies_action(3)),
             ("Go back", lambda: "__BACK__"),
-        ]
+        ])
+        
         action = display_menu(options)
         result = action()
         if result == "__BACK__":
@@ -706,12 +746,75 @@ def handle_military_base_actions_internal_menu():
     if action: action()
 
 
+def add_truck_travel_options(options, current_location):
+    """Adds smart truck travel options to a menu if player has truck keys and gas."""
+    if ("truck_keys" in game_state["inventory"] and game_state["car_gas"] >= 10):
+        # Smart truck travel options based on current location and game state
+        truck_options = []
+        
+        if current_location == "town_square":
+            # Town Square is the hub - show key destinations
+            truck_options = [
+                ("🚗 Drive to School", lambda: handle_truck_travel_action("school_entrance")),
+                ("🚗 Drive to General Store", lambda: handle_truck_travel_action("general_store")),
+                ("🚗 Drive to Tech Store", lambda: handle_truck_travel_action("tech_store")),
+            ]
+            # Only show bus stop if player has cash for ticket
+            if game_state["cash"] >= 1:
+                truck_options.append(("🚗 Drive to Bus Stop", lambda: handle_truck_travel_action("bus_stop")))
+            # Only show outskirts if player needs to escape
+            if game_state["time_remaining"] <= 6:
+                truck_options.append(("🚗 Drive to Outskirts Road", lambda: handle_truck_travel_action("outskirts_road")))
+                
+        elif current_location == "school_entrance":
+            # From school, prioritize getting back to town or supplies
+            truck_options = [
+                ("🚗 Drive to Town Square", lambda: handle_truck_travel_action("town_square")),
+                ("🚗 Drive to General Store", lambda: handle_truck_travel_action("general_store")),
+            ]
+            # Only show bus stop if player has cash
+            if game_state["cash"] >= 1:
+                truck_options.append(("🚗 Drive to Bus Stop", lambda: handle_truck_travel_action("bus_stop")))
+                
+        elif current_location == "general_store":
+            # From store, prioritize getting back to town or school
+            truck_options = [
+                ("🚗 Drive to Town Square", lambda: handle_truck_travel_action("town_square")),
+                ("🚗 Drive to School", lambda: handle_truck_travel_action("school_entrance")),
+            ]
+            # Only show tech store if player needs tech parts
+            if game_state["tech_parts"] < 2:
+                truck_options.append(("🚗 Drive to Tech Store", lambda: handle_truck_travel_action("tech_store")))
+                
+        elif current_location == "tech_store":
+            # From tech store, prioritize getting back to town
+            truck_options = [
+                ("🚗 Drive to Town Square", lambda: handle_truck_travel_action("town_square")),
+                ("🚗 Drive to General Store", lambda: handle_truck_travel_action("general_store")),
+            ]
+            # Only show military base if player has high knowledge and tech parts
+            if game_state["knowledge"] >= 5 and game_state["tech_parts"] >= 2:
+                truck_options.append(("🚗 Drive to Military Base", lambda: handle_truck_travel_action("military_base")))
+                
+        else:
+            # Default fallback - just get back to town
+            truck_options = [
+                ("🚗 Drive to Town Square", lambda: handle_truck_travel_action("town_square")),
+            ]
+        
+        # Insert truck options after the first few regular options
+        insert_index = min(3, len(options))
+        for i, option in enumerate(truck_options):
+            options.insert(insert_index + i, option)
+    
+    return options
+
+
 # --- Main Menu Dispatcher ---
 # This dictionary maps current_location to its corresponding menu handler function.
 menu_handlers = {
     "bedroom": handle_bedroom_menu,
     "living_room": handle_living_room_menu,
-    "front_door": handle_front_door_menu,
     "town_square": handle_town_square_menu,
     "school_entrance": handle_school_entrance_menu,
     "newspaper_club": handle_newspaper_club_menu,
