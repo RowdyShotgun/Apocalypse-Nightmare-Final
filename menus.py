@@ -26,7 +26,7 @@ from game_actions import (
     handle_time_up_ending, handle_jailed_ending, buy_tech_parts_action,
     handle_steal_school_action, handle_steal_tech_store_action, handle_jake_favor_action,
     build_jake_trust_opportunity, handle_truck_escape_ending, handle_truck_travel_action,
-    handle_pawn_shop_sell_action
+    handle_pawn_shop_sell_action, handle_local_bus_travel
 )
 from colorama import Fore
 
@@ -114,7 +114,7 @@ def display_status():
     
     # Missile Destroyed ending requirements
     if game_state["knowledge"] >= 7 and game_state["tech_parts"] >= 2:
-        print_colored("✅ Ready for Missile Destroyed ending!", "success")
+        print_colored("Ready for Missile Destroyed ending!", "success")
     else:
         missing = []
         if game_state["knowledge"] < 7:
@@ -125,17 +125,17 @@ def display_status():
     
     # Allies Escape ending requirements
     if (game_state.get("has_shared_vision_with_friends", False) and
-        game_state["trust_alex"] >= 4 and game_state["trust_maya"] >= 4 and game_state["trust_ben"] >= 4):
+        game_state["trust_alex"] >= 4 and game_state["trust_maya"] >= 5 and game_state["trust_ben"] >= 4):  # Back to requiring effort
         print_colored("✅ Ready for Allies Escape ending!", "success")
     else:
         missing = []
         if not game_state.get("has_shared_vision_with_friends", False):
             missing.append("Share vision with friends")
-        if game_state["trust_alex"] < 4:
+        if game_state["trust_alex"] < 4:  # Back to requiring effort
             missing.append(f"Alex trust ({game_state['trust_alex']}/4)")
-        if game_state["trust_maya"] < 4:
-            missing.append(f"Maya trust ({game_state['trust_maya']}/4)")
-        if game_state["trust_ben"] < 4:
+        if game_state["trust_maya"] < 5:  # Back to requiring effort
+            missing.append(f"Maya trust ({game_state['trust_maya']}/5)")
+        if game_state["trust_ben"] < 4:  # Back to requiring effort
             missing.append(f"Ben trust ({game_state['trust_ben']}/4)")
         print_colored(f"❌ Allies Escape: Need {', '.join(missing)}", "warning")
     
@@ -283,7 +283,7 @@ def handle_town_hall_menu():
 
 def handle_bus_stop_menu():
     bus_ticket_cost = 1 # CHANGED: Bus ticket cost is 1 cash unit
-    def wait_for_bus():
+    def buy_out_of_state_ticket():
         if game_state["cash"] >= bus_ticket_cost and game_state["time_remaining"] > 0:
             if (game_state.get("has_shared_vision_with_friends", False) and
                 game_state["trust_alex"] >= 4 and game_state["trust_maya"] >= 4 and game_state["trust_ben"] >= 4):
@@ -298,7 +298,8 @@ def handle_bus_stop_menu():
             print_slow("You don't have enough cash for a bus ticket, or there's no time left.")
             return
     options = [
-        (f"Wait for bus (Requires {bus_ticket_cost} Cash unit(s))", wait_for_bus),
+        ("Travel to outskirts using local bus pass", lambda: handle_local_bus_travel()),
+        (f"Buy ticket to out of state (Requires {bus_ticket_cost} Cash unit(s))", buy_out_of_state_ticket),
         ("Go to town square", lambda: set_location("town_square")),
         ("Show inventory", display_inventory),
         ("Show status", display_status),
@@ -359,11 +360,17 @@ def handle_outskirts_road_menu():
          lambda: handle_seek_transport_menu()),
         # Sub-menu for transport search
         ("Go to town square", lambda: set_location("town_square")),
-        ("Go to neighbor's bunker", lambda: set_location("neighbors_bunker")),
+    ]
+    
+    # Only show bunker option if player has discovered it
+    if "bunker_rumor" in game_state["inventory"]:
+        options.append(("Go to neighbor's bunker", lambda: set_location("neighbors_bunker")))
+    
+    options.extend([
         ("Show inventory", display_inventory),
         ("Show status", display_status),
         ("Quit", exit_game),
-    ]
+    ])
     action = display_menu(options)
     action()
 
@@ -538,6 +545,7 @@ def handle_talk_jake_menu():
             ("Challenge his authority (risky)", lambda: handle_talk_jake_action(3)),
             ("Show him respect or offer help", lambda: handle_talk_jake_action(4)),
             ("Stand up for him or defend him", lambda: handle_talk_jake_action(5)),
+            ("Reminisce about old times", lambda: handle_talk_jake_action(6)),
         ]
         # Add favor option if Jake owes a favor
         if game_state.get("jake_owed_favor", False):

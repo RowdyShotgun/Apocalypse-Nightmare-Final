@@ -49,10 +49,10 @@ game_state = {
     "bunker_unlocked": False, # Is the neighbor's bunker accessible
     "military_base_accessed": False, # Has player successfully accessed the base
 
-    "trust_alex": 2,    # Skeptic: low trust, tends to need proof
-    "trust_maya": 5,    # Optimist: high trust, more emotionally receptive
+    "trust_alex": 2,    # Skeptic: low trust, needs proof but can be convinced
+    "trust_maya": 4,    # Optimist: moderate trust, more emotionally receptive
     "trust_ben": 3,     # Pragmatist: moderate trust, looks for practical solutions
-    "trust_jake": 1,    # Bully: very low trust, difficult to convince/work with
+    "trust_jake": 1,    # Bully: very low trust, difficult but not impossible
 
     "has_shared_vision_with_friends": False, # Flag if vision has been shared with newspaper club friends
 
@@ -124,7 +124,7 @@ def reset_game_state():
         "bunker_unlocked": False,
         "military_base_accessed": False,
         "trust_alex": 2,
-        "trust_maya": 5,
+        "trust_maya": 4,
         "trust_ben": 3,
         "trust_jake": 1,
         "has_shared_vision_with_friends": False,
@@ -229,11 +229,11 @@ locations = {
     },
     "bus_stop": {
         "description": (
-            "A small, weathered shelter with a faded bus schedule. The road stretches out towards the next town."
+            "A small, weathered shelter with a faded bus schedule. Local buses run around town, while out-of-state buses offer escape routes."
         ),
         "exits": {"town square": "town_square"},
         "interactions": {
-            "check schedule": "The next bus isn't for hours. Even then, it only goes to the next major city.",
+            "check schedule": "The local bus runs every hour, while out-of-state buses are less frequent but go much further.",
             "wait for bus": "You sit on the bench, time ticking by. Waiting feels like a luxury you don't have."
         }
     },

@@ -72,9 +72,9 @@ def advance_time(hours=1, silent=False):
 def build_jake_trust_opportunity():
     """Creates an opportunity to build trust with Jake through random events or specific actions."""
     # Only trigger if Jake's trust is still low and we haven't had this opportunity yet
-    if (game_state["trust_jake"] <= 2 and 
+    if (game_state["trust_jake"] <= 3 and 
         not game_state.get("jake_trust_opportunity_given", False) and
-        random.random() < 0.3):  # 30% chance when conditions are met
+        random.random() < 0.5):  # 50% chance when conditions are met (increased from 30%)
         
         print_slow("\nYou notice Jake being hassled by some older kids in the hallway.")
         print_slow("They're making fun of his jacket and pushing him around.")
@@ -84,8 +84,8 @@ def build_jake_trust_opportunity():
             print_slow("You step forward. 'Hey, leave him alone!'")
             print_slow("The older kids look surprised, then back off. 'Whatever, losers.'")
             print_slow("Jake looks at you with a mix of surprise and gratitude.")
-            game_state["trust_jake"] += 2
-            print_slow("Jake's trust in you has increased!")
+            game_state["trust_jake"] += 3  # Increased from +2
+            print_slow("Jake's trust in you has increased significantly!")
         else:
             print_slow("You decide not to get involved. Jake shoots you a disappointed look.")
             game_state["trust_jake"] -= 1
@@ -156,15 +156,15 @@ def handle_talk_alex_action(choice_num):
             print_slow_colored(f"You recount your terrifying vision in detail. {colorize_name('Alex')} listens intently, but his expression remains analytical.", "character", mode='slow')
             game_state["has_shared_vision_with_friends"] = True
             game_state["talked_to_alex_about_vision"] = True
-            if game_state["trust_alex"] >= 4:
+            if game_state["trust_alex"] >= 4:  # Back to requiring effort
                 print_slow_colored(f"{colorize_name('Alex')} nods slowly. 'That's wild... but you usually don't make things up. I'll help you look into it. What kind of proof do we need?'", "character", mode='slow')
                 game_state["knowledge"] += 1
             elif game_state["trust_alex"] >= 2:
                 print_slow_colored(f"{colorize_name('Alex')} raises an eyebrow. 'That sounds crazy, {colorize_name(game_state['protagonist_name'])}. Are you sure you're okay? Maybe you should get some sleep.'", "character", mode='slow')
-                game_state["trust_alex"] -= 1
+                game_state["trust_alex"] -= 0.5  # Reduced penalty from -1
             else:
                 print_slow_colored(f"{colorize_name('Alex')} snorts. 'You're losing it, {colorize_name(game_state['protagonist_name'])}. Stick to facts, not fantasies.' He dismisses you.", "character", mode='slow')
-                game_state["trust_alex"] -= 2
+                game_state["trust_alex"] -= 1  # Reduced penalty from -2
         elif choice_num == 2: # Ask for his research help on a hypothetical disaster.
             print_slow("You frame it as a hypothetical scenario for an article: 'If a major disaster hit, what kind of supplies would a town need? How would people evacuate?'", mode='slow')
             print_slow("Alex brightens. 'An excellent hypothetical! I've actually researched emergency preparedness for a past project. Let me dig out my notes.'", mode='slow')
@@ -176,7 +176,7 @@ def handle_talk_alex_action(choice_num):
             game_state["trust_alex"] += 0.5
             print_slow("You feel slightly more connected with Alex.")
     else: # If already talked to Alex about vision
-        if game_state["trust_alex"] >= 4:
+        if game_state["trust_alex"] >= 4:  # Back to requiring effort
             print_slow("Alex is still processing your warning. 'I'm checking the news, but nothing official yet. Still, I'm with you. What's our next move?'", mode='slow')
         elif game_state["trust_alex"] >= 2:
             print_slow("Alex seems a bit awkward. He quickly changes the subject, clearly unconvinced by your vision.", mode='slow')
@@ -194,23 +194,24 @@ def handle_talk_maya_action(choice_num):
             print_slow_colored(f"{colorize_name(game_state['protagonist_name'])} tells {colorize_name('Maya')} everything, the terrifying vision, the bomb, the short time left.", "character", mode='slow')
             game_state["has_shared_vision_with_friends"] = True
             game_state["talked_to_maya_about_vision"] = True
-            if game_state["trust_maya"] >= 4:
+            if game_state["trust_maya"] >= 5:  # Back to requiring effort
                 print_slow_colored("Her eyes widen, and her usual optimism falters. She looks genuinely scared. 'Oh my god... that's... terrifying. But I believe you. What can we even do?'", "character", mode='slow')
                 game_state["trust_maya"] += 5
                 print_slow("Maya is shaken, but she believes you. Your bond with her deepens.", mode='slow')
-            elif game_state["trust_maya"] >= 2:
+            elif game_state["trust_maya"] >= 3:  # Moderate trust - concerned but not convinced
                 print_slow_colored("Maya's brow furrows. 'That sounds awful. Maybe it was just a really bad dream?' She's clearly concerned, but struggles to accept it.", "character", mode='slow')
                 game_state["trust_maya"] += 1
             else:
                 print_slow_colored("Maya looks uncomfortable and quickly changes the subject, clearly worried about your mental state.", "character", mode='slow')
+                game_state["trust_maya"] -= 0.5  # Reduced penalty
         elif choice_num == 2: # Talk about art or other light topics.
             print_slow(f"{game_state['protagonist_name']} talks about her sketches and the latest school gossip. Maya seems happy for the distraction.", mode='slow')
             game_state["trust_maya"] += 0.5
             print_slow("You feel slightly more connected with Maya.")
     else:
-        if game_state["trust_maya"] >= 4:
+        if game_state["trust_maya"] >= 5:  # Back to requiring effort
             print_slow("Maya is anxious but supportive. 'I'm here for you, no matter what happens. We'll face this together.'", mode='slow')
-        elif game_state["trust_maya"] >= 2:
+        elif game_state["trust_maya"] >= 3:
             print_slow("Maya tries to offer comfort, but her voice is strained. She's clearly thinks you're overwhelmed.", mode='slow')
         else:
             print_slow("Maya avoids eye contact and quickly finds an excuse to leave. She's clearly uncomfortable around you now.", mode='slow')
@@ -226,7 +227,7 @@ def handle_talk_ben_action(choice_num):
             print_slow_colored(f"{colorize_name(game_state['protagonist_name'])} tells {colorize_name('Ben')} about the nuclear missile vision, emphasizing the urgency and practical implications.", "character", mode='slow')
             game_state["has_shared_vision_with_friends"] = True
             game_state["talked_to_ben_about_vision"] = True
-            if game_state["trust_ben"] >= 4:
+            if game_state["trust_ben"] >= 4:  # Back to requiring effort
                 print_slow_colored(f"{colorize_name('Ben')}'s eyes narrow, considering. 'That's heavy... but if it's true, we need supplies. A place to go. What's the plan?'", "character", mode='slow')
                 game_state["trust_ben"] += 10
                 game_state["knowledge"] += 1
@@ -234,10 +235,10 @@ def handle_talk_ben_action(choice_num):
                 print_slow_colored("Ben starts listing things: 'Water, non-perishables, a map, maybe a working vehicle...' You gained **Survival Checklist**.", "item", mode='slow')
             elif game_state["trust_ben"] >= 2:
                 print_slow_colored(f"{colorize_name('Ben')} looks uncomfortable. 'Look, I'm not really good with... hypothetical apocalypses. What's the actual problem, {colorize_name(game_state['protagonist_name'])}?' He tries to change the subject.", "character", mode='slow')
-                game_state["trust_ben"] -= 1
+                game_state["trust_ben"] -= 0.5  # Reduced penalty from -1
             else:
                 print_slow_colored(f"{colorize_name('Ben')} shakes his head. 'Sounds like a bad acid trip, {colorize_name(game_state['protagonist_name'])}. You okay?' He dismisses your story completely.", "character", mode='slow')
-                game_state["trust_ben"] -= 2
+                game_state["trust_ben"] -= 1  # Reduced penalty from -2
         elif choice_num == 2: # Ask him for help with something practical (e.g., getting supplies).
             print_slow(f"{game_state['protagonist_name']} asks Ben: 'I need to get out of here, or get some serious supplies. You know this town better than anyone. Any ideas?'", mode='slow')
             print_slow(
@@ -246,30 +247,33 @@ def handle_talk_ben_action(choice_num):
                 "And old Mr. Henderson's truck always has the keys in it.'",
                 mode='slow'
             )
+            
+            # Add bunker information if Ben has high trust
+            if game_state["trust_ben"] >= 6 and "bunker_rumor" not in game_state["inventory"]:
+                print_slow("Ben lowers his voice. 'Also... I heard a rumor about a neighbor who built a bunker out in the hills. Supposedly it's well-hidden, but if you know where to look...'")
+                game_state["inventory"].append("bunker_rumor")
+                print_slow("Ben gives you directions to the hidden bunker. You gained **Bunker Rumor**!")
+            
             game_state["trust_ben"] += 5
             game_state["inventory"].append("tip_henderson_truck")
-            print_slow(
-                "Ben offers to help you find gas for a vehicle! Your **trust with Ben** improves significantly. "
-                "You gained a **Tip about Mr. Henderson's Truck**.",
-                mode='slow'
-            )
-        elif choice_num == 3: # Talk about his radio projects.
-            print_slow(f"{game_state['protagonist_name']} talks about Ben's current radio project. He passionately explains frequencies and circuits, a welcome distraction.", mode='slow')
+            print_slow("Ben gives you some useful information about Mr. Henderson's truck. You gained **Truck Tip**.", mode='slow')
+        elif choice_num == 3: # Talk about practical things (e.g., school, work, etc.).
+            print_slow(f"{game_state['protagonist_name']} and {colorize_name('Ben')} discuss practical matters - school, work, the usual stuff.", mode='slow')
             game_state["trust_ben"] += 1
-            print_slow("Ben seems to appreciate your interest.")
-    else: # If Ben has already been told the vision
-        if game_state["trust_ben"] >= 4:
-            print_slow("Ben is focused on solutions. 'Okay, so what's the next practical step? We need a clear objective.'", mode='slow')
+            print_slow("You feel slightly more connected with Ben.")
+    else: # If already talked to Ben about vision
+        if game_state["trust_ben"] >= 4:  # Back to requiring effort
+            print_slow("Ben is focused on practical matters. 'So what's our next move? We need a plan, and fast.'", mode='slow')
         elif game_state["trust_ben"] >= 2:
-            print_slow("Ben gives you a sympathetic look but quickly shifts the conversation to something more concrete.", mode='slow')
+            print_slow("Ben seems a bit awkward, clearly still processing your warning but trying to be supportive.", mode='slow')
         else:
-            print_slow("Ben avoids eye contact and finds an excuse to fiddle with his radio, clearly uncomfortable with you.", mode='slow')
+            print_slow("Ben avoids the topic entirely, clearly uncomfortable with your 'crazy' story.", mode='slow')
     input("Press Enter to continue...")
     advance_time(0.5, silent=True)
 
 def print_jake_post_vision_dialogue():
     """Prints Jake's reaction after the vision has been shared, depending on his trust level."""
-    if game_state["trust_jake"] >= 5:
+    if game_state["trust_jake"] >= 5:  # Back to requiring effort
         print_slow("Jake looks agitated. 'Still nothing concrete? We need to do something, pronto!'")
     else:
         print_slow("Jake avoids eye contact, mumbling something about being busy. He doesn't want to talk about your 'crazy' vision.")
@@ -283,17 +287,17 @@ def handle_talk_jake_action(choice_num):
         if choice_num == 1: # Tell him about the vision (carefully).
             print_slow(f"You briefly and gravely tell him about the impending doom, trying to appeal to any hidden survival instinct.")
             game_state["talked_to_jake_about_vision"] = True
-            if game_state["trust_jake"] >= 5:
+            if game_state["trust_jake"] >= 5:  # Back to requiring effort
                 print_slow(f"Jake's tough facade cracks, a flicker of fear in his eyes. 'You're serious? Fine. If you need muscle, I'm in.'")
                 game_state["trust_jake"] += 10
                 game_state["mob_of_civilians"] = True
                 print_slow("Jake seems to take you seriously, and you feel like he could help you rally others.")
             elif game_state["trust_jake"] >= 3:
                 print_slow(f"Jake laughs, but it sounds forced. 'A bomb? You're crazy, {game_state['protagonist_name']}.' He shakes his head, but he doesn't walk away immediately.")
-                game_state["trust_jake"] -= 1
+                game_state["trust_jake"] -= 0.5  # Reduced penalty from -1
             else:
                 print_slow(f"Jake scoffs. 'And I thought *I* was messed up. Get lost.' He pushes you slightly.")
-                game_state["trust_jake"] -= 2
+                game_state["trust_jake"] -= 1  # Reduced penalty from -2
         elif choice_num == 2: # Ask for a favor (e.g., getting past someone, intimidating someone).
             print_slow("You ask him to 'handle' a minor obstacle (e.g., distract someone, 'convince' someone to move).")
             if game_state["trust_jake"] >= 3:
@@ -323,6 +327,11 @@ def handle_talk_jake_action(choice_num):
             print_slow("Jake looks at you with a mix of surprise and grudging respect.")
             game_state["trust_jake"] += 2
             print_slow("Jake seems to remember this gesture. 'Thanks... I guess.'")
+        elif choice_num == 6: # NEW: Reminisce about old times.
+            print_slow("You bring up some old memories from when you were kids. 'Remember when we used to...'")
+            print_slow("Jake's expression softens slightly. 'Yeah, those were simpler times.'")
+            game_state["trust_jake"] += 1
+            print_slow("Jake seems to appreciate the trip down memory lane. His guard lowers a bit.")
     else: # If Jake has already been told the vision
         print_jake_post_vision_dialogue()
     advance_time(0.5, silent=True)
@@ -972,11 +981,11 @@ def get_contextual_hint():
         hints.append("💰 You could work at Burger Hut or sell items for cash.")
     
     # Trust-based hints
-    if game_state["trust_alex"] < 3:
+    if game_state["trust_alex"] < 4:  # Back to requiring effort
         hints.append("🔍 Alex might have useful information if you gain his trust.")
-    if game_state["trust_maya"] < 3:
+    if game_state["trust_maya"] < 5:  # Back to requiring effort
         hints.append("💝 Maya could provide moral support and encouragement.")
-    if game_state["trust_ben"] < 3:
+    if game_state["trust_ben"] < 4:  # Back to requiring effort
         hints.append("🔧 Ben's practical knowledge could be valuable.")
     if game_state["trust_jake"] < 2:
         hints.append("👊 Jake might help if you show him respect.")
@@ -1258,3 +1267,12 @@ def handle_truck_travel_action(destination):
     print_slow(f"You arrive at {destination.replace('_', ' ').title()}. Gas remaining: {game_state['car_gas']}%")
     print_slow("⏰ Time saved: Truck travel is much faster than walking!")
     return True
+
+def handle_local_bus_travel():
+    """Handles taking the local bus to outskirts."""
+    print_slow("You board the local bus that runs around the outskirts of town.")
+    print_slow("The ride is short but gives you a good view of the area where Mr. Henderson's truck is usually parked.")
+    print_slow("You get off at the outskirts stop, near the main road leading out of town.")
+    game_state["current_location"] = "outskirts_road"
+    advance_time(0.5)
+    input("Press Enter to continue...")
